@@ -69,9 +69,9 @@ VARSCAN=$MSINGSENV/bin/VarScan.v2.3.7.jar  # NB! Need to set up the msings varia
 #"multiplier" is the number of standard deviations from the baseline that is required to call instability
 multiplier=2.0 
 #"msi_min_threshold" is the maximum fraction of unstable sites allowed to call a specimen MSI negative     
-msi_min_threshold=0.2
+msi_min_threshold=0.1
 #"msi_max_threshold" is the minimum fraction of unstable sites allowed to call a specimen MSI positive
-msi_max_threshold=0.2
+msi_max_threshold=0.1
 
 
 # Run the mSINGS analysis
