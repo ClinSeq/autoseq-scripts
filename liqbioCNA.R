@@ -461,7 +461,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 cn_calls=rep('NO_CALL',nrow(genes))
 names(cn_calls) = genes$label
 ## Get the AR copy number
-g=genes[1,]
+g=genes[genes$label=='AR',]
 data_line=data.frame(g)
 cbins=bins[bins$chromosome==g$chromosome,] # this chromosome
 left=cbins$end<g$start-3e6 # left control
@@ -519,7 +519,7 @@ data_line$cnvkit.logr=target.median
 data_line$cnvkit.to.control=round(target.diff[control.toUse],3)
 data_line$cnvkit.pval=round(pval,5)
 # For TMPRSS-ERG del, require the signal to be 0.1 below nearest control
-if (data_line$cnvkit.to.control < -.01) cn_calls['TMPRSS2']='IMPLIED_FUSION'
+if (data_line$cnvkit.to.control < -.1) cn_calls['TMPRSS2']='IMPLIED_FUSION'
 
 # Write copy numbers to JSON file
 exportJson <- toJSON(cn_calls)
