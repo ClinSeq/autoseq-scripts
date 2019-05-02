@@ -403,18 +403,18 @@ all.pten.hom.loss <-
   p.right < significance.threshold &
   m.left < difference.threshold &
   m.right < difference.threshold
-seg.pten.hom.loss <- FALSE; if (l.seg < 5e6) for (i in 1:length(l.seg)) {
+seg.pten.hom.loss <- FALSE; if (any(l.seg < 5e6)) for (i in 1:length(l.seg)) {
   seg.pten.hom.loss <-
     seg.pten.hom.loss |
     p.seg.left[i] < significance.threshold &
     p.seg.right[i] < significance.threshold &
-    m.left[i] < difference.threshold &
-    m.right[i] < difference.threshold
+    m.seg.left[i] < difference.threshold &
+    m.seg.right[i] < difference.threshold
 }
 pten.hom.loss <- all.pten.hom.loss | seg.pten.hom.loss
 
 # PTEN hemizygous loss and LOH:
-six <- grep('ENSG00000171862',segments$gene); #seg(s) with PTEN
+six <- grep('ENSG00000171862|PTEN',segments$gene); #seg(s) with PTEN
 snps.near <- alf[alf$chromosome==10 & alf$start>=80e6 & alf$end<=100e6,]
 snps.ptenseg <- alf[alf$chromosome==10 & alf$start>=min(segments$start[six]) & alf$end<=min(segments$end[six]),]
 ## call LOH if PTEN segment or vicinity AI is above 0.5 (corr to 50% cells) and with logr below .1
