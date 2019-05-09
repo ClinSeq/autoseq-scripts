@@ -27,5 +27,5 @@ def extract_somatic_afs(vcf_filename, output="output.bedGraph"):
         for record in vcf_reader:
             tumor_genotype = record.genotype(non_normal_sample)
             if tumor_genotype.data.DP > 0:
-                allelic_fraction = tumor_genotype.data.AO/tumor_genotype.data.DP
-                print >> output_file, "{}\t{}\t{}\t{}".format(record.CHROM, record.POS, record.POS, allelic_fraction)
+                allelic_fraction = float(tumor_genotype.data.AO)/float(tumor_genotype.data.DP)
+                print >> output_file, "{}\t{}\t{}\t{}".format(record.CHROM, record.POS, record.POS, round(allelic_fraction, 2))
