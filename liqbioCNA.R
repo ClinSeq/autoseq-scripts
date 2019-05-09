@@ -398,10 +398,35 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 
 ### Read PureCN files:
 {
-  purecn_stat=read.delim(opts$purecn_csv,sep = ',',stringsAsFactors = F) # purity/ploidy
-  purecn_vars=read.delim(opts$purecn_variants_csv,sep = ',',stringsAsFactors = F) # mutations and snps
-  purecn_genes=read.delim(opts$purecn_genes_csv,sep = ',',stringsAsFactors = F) # gene copy number and LOH
-  purecn_loh=read.delim(opts$purecn_loh_csv,sep = ',',stringsAsFactors = F) # segmented copy number and LOH
+  # files to read (purity/ploidy, mutations and snps, gene copy number and LOH, segmented copy number and LOH)
+  purecn_files = c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
+  # variables to assign to
+  purecn_variables = c("purecn_stat", "purecn_vars", "purecn_genes", "purecn_loh")
+  # colnames to use if no data avialable and mock df created
+  purecn_colnames = list(
+    c("Sampleid","Purity","Ploidy","Sex","Contamination","Flagged","Failed","Curated","Comment"),
+    c("Sampleid", "chr", "start", "end", "ID", "REF", "ALT", "SOMATIC.M0", "SOMATIC.M1", "SOMATIC.M2", 
+      "SOMATIC.M3", "SOMATIC.M4", "SOMATIC.M5", "SOMATIC.M6", "SOMATIC.M7", "GERMLINE.M0", "GERMLINE.M1", 
+      "GERMLINE.M2", "GERMLINE.M3", "GERMLINE.M4", "GERMLINE.M5", "GERMLINE.M6", "GERMLINE.M7", "GERMLINE.CONTHIGH", 
+      "GERMLINE.CONTLOW", "GERMLINE.HOMOZYGOUS", "ML.SOMATIC", "POSTERIOR.SOMATIC", "ML.M", "ML.C", "ML.M.SEGMENT", 
+      "M.SEGMENT.POSTERIOR", "M.SEGMENT.FLAGGED", "ML.AR", "AR", "AR.ADJUSTED", "MAPPING.BIAS", "ML.LOH", 
+      "CN.SUBCLONAL", "CELLFRACTION", "FLAGGED", "log.ratio", "depth", "prior.somatic", "prior.contamination", 
+      "on.target", "seg.id", "gene.symbol"),
+    c("Sampleid", "gene.symbol", "chr", "start", "end", "C", "seg.mean", "seg.id", "number.targets", "gene.mean", 
+      "gene.min", "gene.max", "focal", "breakpoints", "type", "num.snps.segment", "M", "M.flagged", "loh"),
+    c("Sampleid", "chr", "start", "end", "arm", "C", "M", "type")
+  )  
+  # sample id to use if no data avialable and mock df created
+  sampid = sub(".csv","", basename(purecn_files[1]))  # NB: is this correct, or should there also be the "-nodups" ending to conform with samples with PureCN data?
+  for (i in 1:length(purecn_files)) {
+    if (file.size(purecn_files[i]) == 0) {  # if no valid PureCN output produced, create mock df
+      assign(purecn_variables[i], 
+             data.frame(matrix(c(sampid, rep(NA, length(purecn_colnames[[i]])-1)), nrow=1,
+                               dimnames=list(1, purecn_colnames[[i]])), stringsAsFactors = F))
+    } else {  # if data available in the PureCN output, read it
+      assign(purecn_variables[i], read.delim(purecn_files[i], sep = ',', stringsAsFactors = F))
+    }
+  }
   purecn_loh$cumstart=NA
   purecn_loh$cumend=NA
   for(i in 1:nrow(chrsizes)){
@@ -436,7 +461,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 cn_calls=rep('NO_CALL',nrow(genes))
 names(cn_calls) = genes$label
 ## Get the AR copy number
-g=genes[1,]
+g=genes[genes$label=='AR',]
 data_line=data.frame(g)
 cbins=bins[bins$chromosome==g$chromosome,] # this chromosome
 left=cbins$end<g$start-3e6 # left control
@@ -458,6 +483,7 @@ if (data_line$cnvkit.to.control > 0.5) cn_calls['AR']='AMPLIFIED'
 ## Check for amplifications
 for (g in c('CCND1','MYC', 'PIK3CA')) {
   t=purecn_genes[purecn_genes$gene.symbol==g,]
+  if (all(is.na(t))) next()  # skip if only mocked purecn data
   if (t$focal & t$C>3) cn_calls[g]='AMPLIFIED' #   calls amplified if focal and >3 copies
   if (t$C >= 7) cn_calls[g]='AMPLIFIED'            #  also if ≥7 copies
   if (!is.na(t$type)) if (t$type=='AMPLIFIED') cn_calls[g]='AMPLIFIED'   #           or if >5 copies regardless of focal status
@@ -468,6 +494,7 @@ for (g in c("APC", "ATM", "BRCA1", "BRCA2", "CCND1", "CDK12", "CDKN1B",
             "MLH3", "MSH2", "MSH3", "MSH6", "NKX3-1", "PIK3R1", 
             "PMS2", "PPP2R2A", "PTEN", "RB1", "TMPRSS2", "TP53", "ZBTB16")) {
   t=purecn_genes[purecn_genes$gene.symbol==g,] 
+  if (all(is.na(t))) next()  # skip if only mocked purecn data
   if (nrow(t)>0){
     if (isTRUE(t$loh)) cn_calls[g]='LOSS_OF_HETEROZYGOSITY'
     if (t$focal & t$C==1) cn_calls[g]='FOCAL_DELETION'
@@ -492,7 +519,7 @@ data_line$cnvkit.logr=target.median
 data_line$cnvkit.to.control=round(target.diff[control.toUse],3)
 data_line$cnvkit.pval=round(pval,5)
 # For TMPRSS-ERG del, require the signal to be 0.1 below nearest control
-if (data_line$cnvkit.to.control < -.01) cn_calls['TMPRSS2']='IMPLIED_FUSION'
+if (data_line$cnvkit.to.control < -.1) cn_calls['TMPRSS2']='IMPLIED_FUSION'
 
 # Write copy numbers to JSON file
 exportJson <- toJSON(cn_calls)
@@ -758,7 +785,7 @@ write(exportJson, opts$cna_json)
                col='#00000010',
                lwd=5)
       ix=purecn_loh$M==0 | purecn_loh$C==1
-      if (sum(ix)>0) segments(x0=purecn_loh$cumstart[ix],x1=purecn_loh$cumend[ix],
+      if (sum(ix, na.rm=TRUE)>0) segments(x0=purecn_loh$cumstart[ix],x1=purecn_loh$cumend[ix],
                               y0=-1.8,y1=-1.8,
                               col='cyan',
                               lwd=5)
@@ -772,7 +799,7 @@ write(exportJson, opts$cna_json)
                col=col,
                lwd=3)
       ix=purecn_loh$C==0
-      if (sum(ix)>0) points(x = (purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2,y = -1.8,pch=24,bg='lightblue')
+      if (sum(ix, na.rm=TRUE)>0) points(x = (purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2,y = -1.8,pch=24,bg='lightblue')
     }
     
     #Add a bar between chromosomes to distinguish them
