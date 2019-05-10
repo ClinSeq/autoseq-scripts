@@ -31,7 +31,7 @@ Fix an input CNV-kit cnr and cns file using the specified table of reference dat
     # Load the reference data for fixing the samples:
     reference_data = pd.read_table(input_reference)
 
-    background_idx = (bins.gene == "Background")
+    background_idx = (bins.gene == "Background" or bins.gene == "Antitarget")
     autosomal_idx = ~(bins.chromosome.isin(["X", "Y"]))
 
     # Median center target and antitarget bins:

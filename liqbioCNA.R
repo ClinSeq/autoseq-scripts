@@ -623,7 +623,7 @@ write(exportJson, opts$cna_json)
     
     ar=genes[1,]
     par(mar=c(2,3,2,.5),xaxs='i',yaxs='i',las=1)
-    ix=bins$chromosome=='X' & bins$gene!='Background'
+    ix=bins$chromosome=='X' & bins$gene!='Background' & bins$gene!='Antitarget'
     t=bins[ix,]
     plot(t$log2,ylim=ylim,pch=16,cex=0.3,main='AR',cex.main=0.6,axes=F)
     axis(2,c(-1,0,1,2),lwd=lwd,lend=1,cex.axis=cex.axis,hadj=axis2hadj,tck=-0.03)
@@ -759,7 +759,7 @@ write(exportJson, opts$cna_json)
       lwd=2)
     
     if (!is.null(bins)) {
-      ix=bins$gene=='Background'
+      ix=bins$gene=='Background' | bins$gene=='Antitarget'
       points((bins$cumstart[!ix]+bins$cumend[!ix])/2,bins$log2[!ix], #ontargets
              pch=1,
              cex=0.7,

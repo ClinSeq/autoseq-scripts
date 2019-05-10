@@ -171,7 +171,7 @@ bins$centerpos <- bins$cumstart+(bins$cumend-bins$cumstart)/2
 
 
 # Adjust target and antitarget bin log2 ratio so both their medians =0:
-ix=bins$gene=='Background'
+ix=bins$gene=='Background' | bins$gene=='Antitarget'
 bins$log2[ix]=bins$log2[ix]-median(bins$log2[ix],na.rm=T)
 bins$log2[!ix]=bins$log2[!ix]-median(bins$log2[!ix],na.rm=T)
 
@@ -184,9 +184,9 @@ for (i in 1:nrow(segments)) {
 }
 
 bins$pch=1
-bins$pch[bins$gene=='Background']=16
+bins$pch[bins$gene=='Background' | bins$gene=='Antitarget']=16
 bins$col='black'
-bins$col[bins$gene=='Background']='grey'
+bins$col[bins$gene=='Background' | bins$gene=='Antitarget']='grey'
 
 
  ######  ##    ## ########   ######  
@@ -565,15 +565,15 @@ try( {
     name=rev(strsplit(opts$cnr,'/')[[1]])[1]
     name=strsplit(name,'-panel')[[1]][1]
     mtext(name,3,padj=-4.5)
-    ix=bins$gene=='Background'
+    ix=bins$gene=='Background' | bins$gene=='Antitarget'
     snpcov='NA'
     if (!is.null(alf)) if (nrow(alf)>0) 
       snpcov=paste(round(median(alf$td)),round(median(alf$nd)),sep='/')
     mapd1=round(median(abs(diff(bins$log2[!ix]))),2)
     mapd2=round(median(abs(diff(bins$log2[ix]))),2)
     simplePur=round(100*purity$median.allelefreq)
-    tar=round(median(bins$log2[bins$gene!='Background']),2)
-    atar=round(median(bins$log2[bins$gene=='Background']),2)
+    tar=round(median(bins$log2[bins$gene!='Background' & bins$gene!='Antitarget']),2)
+    atar=round(median(bins$log2[bins$gene=='Background' | bins$gene=='Antitarget']),2)
     mtext(paste(format(Sys.time(), "%F %H:%M:%S"),'',
                 '  SNPcov:',snpcov,
                 '  MAPD:',paste(mapd1,mapd2,sep='/'),
@@ -814,7 +814,7 @@ try( {
     #   points((bins$cumstart[ix]+bins$cumend[ix])/2,bins$smoothed[ix],type='l',col='#00C00060',lwd=3)
     # }
     # real signal (omitted above) on top of it
-    ix=bins$gene=='Background'
+    ix=bins$gene=='Background' | bins$gene=='Antitarget'
     points((bins$cumstart[ix]+bins$cumend[ix])/2,bins$log2[ix], #offtargets
            pch=16,
            cex=0.6,
