@@ -50,14 +50,15 @@ def main(variant_file, bam_file, samplename, loglevel, filter_hom):
 	    bases.sort()
 	    logging.debug("pileup at {}:{} {}/{} = {}".format(variant.CHROM, variant.POS, variant.REF, variant.ALT,
 							      "".join(bases)))
-	    variant.FORMAT += ":AO:RO"
 	    Genotype = namedtuple('Genotype', variant.FORMAT.split(":"))  # lazy genotype object
 	    Genotype.__new__.__defaults__ = ('.',) * len(Genotype._fields)  # set defaults to 0
 	    dp = len(bases)
+		# reference allele observations
 	    ro = len([base for base in bases if base == variant.REF])
+		# alternate allele observations
 	    ao = len([base for base in bases if base == variant.ALT[0]])
 	    gt = "./."
-	    newgt = Genotype(AO=ao, RO=ro, DP=dp, GT=gt)
+	    newgt = Genotype(GT=gt, DP=dp, AD=[ro,ao])
 	    newcall = Call(site=variant, sample=samplename, data=newgt)
 	    variant.samples.append(newcall)
 	    vcf_writer.write_record(variant)
