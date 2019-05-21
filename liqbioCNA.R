@@ -28,6 +28,7 @@ args <- rbind(
   c("germline_mut_vcf", NA, 1, "character", "germline mutation vcf file"),
   c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file"),
   c("plot_png", NA, 1, "character", "plot .png file name"),
+  c("plot_png_normal", NA, 1, "character", "normal CNV plot .png file name"),
   c("cna_json", NA, 1, "character", "CNA output json file name"),
   c("purity_json", NA, 1, "character", "purity output json file name")
 )
@@ -311,7 +312,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 }
 
 ### read CNVkit copy number data
-{
+{ #tumor
   segments <- read.delim(opts$tumor_cns,stringsAsFactors = F)
   bins <- read.delim(opts$tumor_cnr,stringsAsFactors = F)
 
@@ -335,6 +336,32 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
   }
   bins$centerpos <- bins$cumstart+(bins$cumend-bins$cumstart)/2
   bins=bins[order(bins$cumstart),]
+}
+
+{ # normal
+  segments_n <- read.delim(opts$normal_cns,stringsAsFactors = F)
+  bins_n <- read.delim(opts$normal_cnr,stringsAsFactors = F)
+  
+  ## Segment start and end pos
+  segments_n$cumstart <- NA
+  segments_n$cumend   <- NA
+  for(chr in chrsizes$chr){
+    ix <- which(segments_n$chromosome == chr)
+    segments_n$cumstart[ix] <- segments_n$start[ix] + chrsizes$cumstart[chrsizes$chr==chr]
+    segments_n$cumend[ix] <- segments_n$end[ix] + chrsizes$cumstart[chrsizes$chr==chr]
+  }
+  segments_n$centerpos <- segments_n$cumstart+(segments_n$cumend-segments_n$cumstart)/2
+  
+  ## Bin start and end pos
+  bins_n$cumstart <- NA
+  bins_n$cumend   <- NA
+  for(chr in chrsizes$chr){
+    ix <- which(bins_n$chromosome == chr)
+    bins_n$cumstart[ix] <- bins_n$start[ix] + chrsizes$cumstart[chrsizes$chr==chr]
+    bins_n$cumend[ix] <- bins_n$end[ix] + chrsizes$cumstart[chrsizes$chr==chr]
+  }
+  bins_n$centerpos <- bins_n$cumstart+(bins_n$cumend-bins_n$cumstart)/2
+  bins_n=bins_n[order(bins_n$cumstart),]
 }
 
 ### Read structural variant files
@@ -980,6 +1007,100 @@ write(exportJson, opts$cna_json)
 }
 
 
+#LogR plot for normal
+try( {
+  ## File name here:
+  png(filename = opts$plot_png_normal,width=11.7,height=2.1,units="in",res=600)
+  
+  #Set marginals, outer marginals and mgp(which is for xlab,ylab,ticks and axis)
+  par(mar = c(1, 1, 1, 0))
+  par(oma = c(0,0,0,0))
+  par(mgp =c(1,0.5,0))
+  par(lend=1)
+  
+  ymin = -2
+  ymax = 2
+  #Plot signal over complete genome
+  plot(NA,NA,#mpos[ix],mval[ix],
+       pch=16,
+       cex=0.3,
+       main=sub(".cnr","",basename(opts$normal_cnr)),
+       xlab = "",
+       ylab = "",
+       col = '#00000003',
+       xaxt="n",
+       axes=F,
+       ylim = c(ymin,ymax),
+       xlim = c(0,3095370729)
+  )
+  seqminmax <- seq(ymin,ymax,by=0.5)
+  #Add axis to the left & right of signal
+  axis(side=2,tck=-0.025,at=seqminmax,cex.axis=0.6,pos=0,las=1)
+  axis(side=4,tck=-0.025,at=seqminmax,cex.axis=0.6,pos=3095370729,las=1)
+  mtext("Log ratio",side=2,line=0,cex=0.7,padj=1.15)
+  
+  whole=(c(.5,1,1.5,2))
+  #Add grey segments
+  segments(
+    y0=log2(whole),y1=log2(whole),
+    x0=0,x1=3e9,
+    col='#00000020',
+    lwd=1)
+  
+  
+  #Add genes as lines
+  segments(
+    x0=(genes$cumstart+genes$cumend)/2,
+    y0=-100,y1=100,
+    col='#0000C020',
+    lwd=2)
+  
+  if (!is.null(bins_n)) {
+    ix=bins_n$gene=='Background' | bins_n$gene=='Antitarget'
+    points((bins_n$cumstart[!ix]+bins_n$cumend[!ix])/2,bins_n$log2[!ix], #ontargets
+           pch=1,
+           cex=0.7,
+           type='l',
+           col = '#00000020'
+    )
+    points((bins_n$cumstart[!ix]+bins_n$cumend[!ix])/2,bins_n$log2[!ix], #ontargets
+           pch=16,
+           cex=0.5,
+           #type='l',
+           col = '#00000080'
+    )
+    
+    #Add segments
+    col='#00C000CC'
+    segments(x0=segments_n$cumstart,x1=segments_n$cumend,
+             y0=segments_n$log2,y1=segments_n$log2,
+             col=col,
+             lwd=3)
+  }
+  
+  #Add a bar between chromosomes to distinguish them
+  segments(
+    x0=chrsizes$cumstart+chrsizes$size,
+    y0=-100,y1=100,
+    col='#00000099',
+    lwd=1)
+  
+  # chromosomes
+  text(x = chrsizes$cumstart+0.5*chrsizes$size,y = ymin,labels = chrsizes$chr,cex=.5)
+  
+  mtext(text='',side=2,las=1,line=-1.2)
+  
+  # Gene names
+  text(x = (genes$cumstart+genes$cumend)/2,y = ymin+0.2,labels = genes$label,srt=45,cex=0.4,col='#0000C0CC')
+  
+  ## add any structural variants
+  try ( {
+    text(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,labels = n_strvs$type,col='blue',cex=0.4,srt=90)
+  }, silent=T)
+  
+  dev.off()
+  
+}, silent=T)
 
 
 
