@@ -85,15 +85,12 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 {
   vcf <- readVcf(opts$het_snps_vcf,genome = "GRCh37")
   g <- geno(vcf)
-  chr <- pos <- rownames(g$DP)
+  r <- rowRanges(vcf)
+  chr <- as.character(seqnames(r))
+  pos <- data.frame(ranges(r))$start
   alf=NULL
   smoothedAi=NA
   if (length(pos)>0) { 
-    for (i in 1:length(pos)) {
-      temp <- strsplit(chr[i],':')[[1]]
-      chr[i] <- as.character(temp[1])
-      pos[i] <- as.numeric(strsplit(temp[2],'_')[[1]][1])
-    }
     pos=as.numeric(pos)
     alf <- data.frame(chromosome=chr, start=pos, end=pos, stringsAsFactors = F, cumstart=NA, cumend=NA)
   }
@@ -106,9 +103,9 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
       alf$cumend[ix] <- alf$end[ix] + chrsizes$cumstart[chrsizes$chr==chr]
     }
     
-    alf$t <- as.numeric(g$AO[,2])/as.numeric(g$DP[,2])
+    alf$t <- as.numeric(sapply(g$AD[,2], "[", 2))/as.numeric(g$DP[,2])
     alf$t[is.nan(alf$t)]=NA # allele freq becomes NaN if cov=0. Then set to NA
-    alf$n <- as.numeric(g$AO[,1])/as.numeric(g$DP[,1])
+    alf$n <- as.numeric(sapply(g$AD[,1], "[", 2))/as.numeric(g$DP[,1])
     alf$n[is.nan(alf$n)]=NA # allele freq becomes NaN if cov=0. Then set to NA
     alf$td <- as.numeric(g$DP[,2])
     alf$nd <- as.numeric(g$DP[,1])
@@ -136,11 +133,13 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
       salf$cumpos[ix] <- salf$pos[ix] + chrsizes$cumstart[chrsizes$chr==chr]
     }
     
-    salf$AF.T <- as.numeric(g$VD[,1])/as.numeric(g$DP[,1])
-    salf$AO.T <- as.numeric(g$VD[,1])
-    salf$DP.T <- as.numeric(g$DP[,1])
-    salf$AO.N <- as.numeric(g$VD[,2])/as.numeric(g$DP[,2])
-    salf$DP.N <- as.numeric(g$DP[,2])
+    salf$FILTER <- fixed(vcf)$FILTER
+    
+    salf$AF.T <- as.numeric(g$VAF[,2])
+    salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4],1,sum))  # sum alt forward and alt reverse 
+    salf$DP.T <- as.numeric(apply(g$DP4[,2,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse 
+    salf$AO.N <- as.numeric(apply(g$DP4[,1,3:4],1,sum))  # sum alt forward and alt reverse 
+    salf$DP.N <- as.numeric(apply(g$DP4[,1,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse 
     
     salf$type='other'
     salf$type[isSNV(vcf)]='snv'
@@ -172,6 +171,10 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
     }
     
     salf=merge(salf,table,by='N',all=T)
+    
+    # Remove rejected variants
+    salf = subset(salf, FILTER != "REJECT")
+    
   } #end somatic mutations
   salf=(salf[,-1])
   
@@ -212,24 +215,26 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 ### Read germline point mutations
 {
   vcf <- readVcf(opts$germline_mut_vcf,genome = "GRCh37")
+  vcf <- expand(vcf)
   g <- geno(vcf)
   r=rowRanges(vcf)
+  f <- fixed(vcf)
   if (length(g)>0) { # if there are any somatic mutations...
     chr=as.character(seqnames(r))
     pos=data.frame(ranges(r))$start
     galf <- data.frame(N=1:length(chr),chromosome=chr,pos=pos,stringsAsFactors = F)
     rownames(galf)=names(r)
     galf$cumpos <- NA
-    galf$REF=as.data.frame(r$REF)[,1]
-    galf$ALT=as.data.frame(r$ALT)[,3]
+    galf$REF <- as.character(f$REF)
+    galf$ALT <- as.character(f$ALT)
     for(chr in chrsizes$chr){
       ix <- which(galf$chromosome == chr)
       galf$cumpos[ix] <- galf$pos[ix] + chrsizes$cumstart[chrsizes$chr==chr]
     }
     
-    galf$AF <- as.numeric(g$AO[,1])/as.numeric(g$DP[,1])
-    galf$AO <- as.numeric(g$AO[,1])
-    galf$DP <- as.numeric(g$DP[,1])
+    galf$AF <- g$AD[,1,2]/g$DP[,1]
+    galf$AO <- g$AD[,1,2]
+    galf$DP <- g$DP[,1]
     
     galf$type='other'
     galf$type[isSNV(vcf)]='snv'
@@ -258,10 +263,16 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
         table[thisrow,1:length(t2)]=t2
       }
     }
+    table=table[,-which(colnames(table)=="AF")]  # remove AF col from vep data to not confuse with AF from galf
     
-    galf=merge(galf,table,by='N',all=T)
+    # Add alleles as vep names them, to use for merge
+    galf$Allele = ifelse(galf$type=="snv", yes = galf$ALT, no = substr(galf$ALT, start=2, stop=nchar(galf$ALT)))
+    galf$Allele[which(galf$Allele== "")] = "-"
+    # Merge with vep table
+    galf=merge(galf,table,by=c('N','Allele'),all.x=T)
   } #end germline mutations
-  galf=(galf[galf$ALT>=12 & galf$AF>=0.2,-1])
+  galf$gnomAD_AF=as.numeric(levels(galf$gnomAD_AF)[galf$gnomAD_AF])  # Make gnom_AD numerical so it can be used
+  galf=(galf[which(galf$AO>=12 & galf$AF>=0.2 & (galf$gnomAD_AF < 0.05 | is.na(galf$gnomAD_AF))),-1])
   # mark the type
   galf$pch=rep(0,nrow(galf))
   galf$pch[galf$type=='snv']=21
@@ -276,6 +287,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
                                                "downstream_gene_variant", 
                                                "intron_variant&non_coding_transcript_variant", 
                                                "5_prime_UTR_variant", "splice_region_variant&synonymous_variant", 
+                                               "non_coding_transcript_exon_variant", "non_coding_transcript_variant",
                                                "non_coding_transcript_exon_variant&non_coding_transcript_variant", 
                                                "intron_variant&NMD_transcript_variant", "TF_binding_site_variant", 
                                                "splice_region_variant&non_coding_transcript_exon_variant&non_coding_transcript_variant", 
@@ -439,10 +451,11 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 ### Calculate/extract purity
 {
   # select high-confidence mutations for purity estimate (not AR)
-  ix=salf$AO.T>=12 & salf$hasConsequence & salf$SYMBOL %in% c("ATM", "BRCA1", "BRCA2", "CCND1", "CDK12", "CDKN2A", 
-                                             "CDKN2B", "CHD1", "CHEK2", "FANCA", "HDAC2", "MYC", "NKX3-1", 
-                                             "PIK3CA", "PIK3R1", "PPP2R2A", "PTEN", "RB1", "TMPRSS2", "TP53", 
-                                             "ZBTB16","SPOP","MED12","PIK3CA","FOXA1","COL5A1")
+  ix=salf$AO.T>=12 & salf$hasConsequence & salf$FILTER == "PASS" & 
+    salf$SYMBOL %in% c("ATM", "BRCA1", "BRCA2", "CCND1", "CDK12", "CDKN2A", 
+                       "CDKN2B", "CHD1", "CHEK2", "FANCA", "HDAC2", "MYC", "NKX3-1", 
+                       "PIK3CA", "PIK3R1", "PPP2R2A", "PTEN", "RB1", "TMPRSS2", "TP53", 
+                       "ZBTB16","SPOP","MED12","PIK3CA","FOXA1","COL5A1")
   median_af=median(salf$AF.T[ix],na.rm = T)
   # consider the mutation(s) being present @ 1 copy and there being 2 normal copies, what's the purity?
   t=median_af
@@ -606,7 +619,7 @@ write(exportJson, opts$cna_json)
     points(alf$td,alf$t,cex=0.3,col='#00000080',xlim=xlim,ylim=ylim,pch=16,lwd=lwd)
     points(alf$nd,alf$n,cex=0.1,col='#60606080',xlim=xlim,ylim=ylim,pch=3,lwd=lwd)
     scol=rep('#C00000CC',nrow(salf))
-    scol[salf$AO.T<6]='#500000CC'
+    scol[salf$FILTER!=PASS]='#500000CC'
     points(salf$DP.T,salf$AF.T,cex=0.4,col=scol,xlim=xlim,ylim=ylim,pch=salf$pch,lwd=lwd)
     segments(x0=median(alf$td,na.rm = T),y0=0,x1=median(alf$td,na.rm = T),y1=1,col='#00000080',lwd=lwd,lty=3)
     segments(x0=median(alf$nd,na.rm = T),y0=0,x1=median(alf$nd,na.rm = T),y1=1,col='#7070FF80',lwd=lwd,lty=3)
@@ -907,7 +920,7 @@ write(exportJson, opts$cna_json)
     ## Add somatic mutations
     if (nrow(salf)>0) {
       scol=rep('#C00000CC',nrow(salf))
-      ix=salf$AF.T<0.02 | salf$AO.T<6
+      ix=salf$AF.T<0.02 | salf$AO.T<6 | salf$FILTER!="PASS"
       scol[ix]='#500000CC'
       points(salf$cumpos[ix],salf$AF.T[ix],
              pch=salf$pch[ix],
@@ -938,7 +951,7 @@ write(exportJson, opts$cna_json)
     ## Add germline mutations
     scol=rep('#0000C0CC',nrow(galf))
     
-    ix=(galf$hasConsequence) & galf$ALT>=12 & galf$AF>=0.2
+    ix=(galf$hasConsequence) & galf$AO>=12 & galf$AF>=0.2
     
     points(galf$cumpos[ix],galf$AF[ix],
            pch=galf$pch[ix],
@@ -965,7 +978,6 @@ write(exportJson, opts$cna_json)
   close.screen(all.screens=T)
   dev.off()
 }
-
 
 
 
