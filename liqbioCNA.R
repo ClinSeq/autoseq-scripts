@@ -56,27 +56,48 @@ chrsizes=structure(list(
   row.names = c(NA,-25L), 
   class = "data.frame")
 
-genes=data.frame(label = c("APC", "AR", "ATM", "BRCA1", "BRCA2", 
-                           "CCND1", "CDK12", "CDKN1B", "CDKN2A", "CDKN2B", "CHD1", "CHEK2", 
-                           "FANCA", "HDAC2", "MLH1", "MLH3", "MSH2", "MSH3", "MSH6", "MYC", 
-                           "NKX3-1", "PIK3CA", "PIK3R1", "PMS2", "PPP2R2A", "PTEN", "RB1", 
-                           "TMPRSS2", "TP53", "ZBTB16"), 
-                 chromosome = c("5", "X", "11", 
-                                "17", "13", "11", "17", "12", "9", "9", "5", "22", "16", "6", 
-                                "3", "14", "2", "5", "2", "8", "8", "3", "5", "7", "8", "10", 
-                                "13", "21", "17", "11"), 
-                 start = c(112043201, 66763873, 108093558, 
-                           41196311, 32889616, 69455872, 37617738, 12870301, 21967750, 22002901, 
-                           98190907, 29083730, 89864766, 114257319, 37034840, 75480466, 
-                           47630205, 79950466, 48010220, 128748314, 23536205, 178866310, 
-                           67584251, 6012869, 26149006, 89623194, 48877882, 4.1e+07, 7571719, 
-                           113931287), 
-                 end = c(112181936L, 66950461L, 108239826L, 41277468L, 
-                         32973809L, 69469242L, 37690800L, 12875305L, 21975132L, 22009312L, 
-                         98262238L, 29137822L, 89883065L, 114291888L, 37092337L, 75518235L, 
-                         47710367L, 80172634L, 48034092L, 128753680L, 23540402L, 178952497L, 
-                         67597649L, 6048737L, 26230195L, 89728532L, 49056026L, 42880085L, 
-                         7590868L, 114121397L),
+genes=data.frame(label = c("AKT1", "APC", "AR", "ARID1A", "ARID2", "ATM", "ATR", "BARD1", 
+                           "BRAF", "BRCA1", "BRCA2", "BRIP1", "CCND1", "CDH1", "CDK12", "CDK4", 
+                           "CDK6", "CDKN1A", "CDKN1B", "CDKN2A", "CHD1", "CHEK2", "CTNNB1", 
+                           "CUL3", "DICER1", "DNMT3A", "FANCA", "FOXA1", "FOXO1", "HRAS", "IDH1", 
+                           "JAK1", "KDM6A", "KEAP1", "KMT2A", "KMT2C", "KMT2D", "KRAS", "MED12", 
+                           "MET", "MGA", "MLH1", "MLH3", "MRE11A", "MSH2", "MSH3", "MSH6", "MYC", 
+                           "NBN", "NCOR1", "NKX3-1", "NRAS", "PALB2", "PIK3CA", "PIK3CB", "PIK3CD", 
+                           "PIK3R1", "PIK3R2", "PMS1", "PMS2", "POLD1", "POLE", "PTEN", "RAD50", 
+                           "RAD51", "RAD51B", "RAD51C", "RAD51D", "RB1", "RNF43", "SETD2", "SF3B1", 
+                           "SPEN", "SPOP", "TMPRSS2", "TP53", "U2AF1", "XPO1", "ZBTB16", "ZFHX3", 
+                           "ZMYM3"), 
+                 chromosome = c("14", "5", "X", "1", "12", "11", "3", "2", "7", "17", "13", "17", 
+                                "11", "16", "17", "12", "7", "6", "12", "9", "5", "22", "3", "2", 
+                                "14", "2", "16", "14", "13", "11", "2", "1", "X", "19", "11", "7", 
+                                "12", "12", "X", "7", "15", "3", "14", "11", "2", "5", "2", "8", 
+                                "8", "17", "8", "1", "16", "3", "3", "1", "5", "19", "2", "7", "19", 
+                                "12", "10", "5", "15", "14", "17", "17", "13", "17", "3", "2", "1", 
+                                "17", "21", "17", "21", "2", "11", "16", "X"),
+                 start = c(105235686, 112043195, 66764465, 27022524, 46123448, 108093211, 142168077, 
+                           215590370, 140419127, 41196312, 32889611, 59758627, 69455855, 68771128, 
+                           37617764, 58141510, 92234235, 36644305, 12867992, 21967751, 98190908, 
+                           29083731, 41236328, 225334867, 95552565, 25455845, 89803957, 38059189, 
+                           41129804, 532242, 209100951, 65298912, 44732757, 10596796, 118307205, 
+                           151832010, 49412758, 25357723, 70338406, 116312444, 41913422, 37034823, 
+                           75480467, 94152895, 47630108, 79950467, 47922669, 128747680, 90945564, 
+                           15932471, 23536206, 115247090, 23614488, 178865902, 138372860, 9711790, 
+                           67511548, 18263928, 190649107, 6012870, 50887461, 133200348, 89622870, 
+                           131891711, 40986972, 68286496, 56769934, 33426811, 48877887, 56429861, 
+                           47057919, 198254508, 16174359, 47676246, 42836478, 7565097, 44513066, 
+                           61704984, 113930315, 72816784, 70459474),
+                 end = c(105262088, 112181936, 66950461, 27108595, 46301823, 108239829, 142297668, 
+                         215674428, 140624564, 41277500, 32973805, 59940882, 69469242, 68869451, 
+                         37721160, 58149796, 92465908, 36655116, 12875305, 21995300, 98262240, 
+                         29138410, 41301587, 225450110, 95624347, 25565459, 89883065, 38069245, 
+                         41240734, 537287, 209130798, 65432187, 44971847, 10614417, 118397539, 
+                         152133090, 49453557, 25403870, 70362303, 116438440, 42062141, 37107380, 
+                         75518235, 94227074, 47789450, 80172279, 48037240, 128753674, 91015456, 
+                         16121499, 23540440, 115259515, 23652631, 178957881, 138553780, 9789172, 
+                         67597649, 18281350, 190742355, 6048756, 50921273, 133263951, 89731687, 
+                         131980313, 41024354, 69196935, 56811703, 33448541, 49056122, 56494956, 
+                         47205457, 198299815, 16266955, 47755596, 42903043, 7590856, 44527697, 
+                         61765761, 114121398, 73093597, 70474996),
                  stringsAsFactors = F)
 genes$cumstart <- genes$start + chrsizes$cumstart[match(genes$chromosome,chrsizes$chr)]
 genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$chr)]
@@ -479,10 +500,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 {
   # select high-confidence mutations for purity estimate (not AR)
   ix=salf$AO.T>=12 & salf$hasConsequence & salf$FILTER == "PASS" & 
-    salf$SYMBOL %in% c("ATM", "BRCA1", "BRCA2", "CCND1", "CDK12", "CDKN2A", 
-                       "CDKN2B", "CHD1", "CHEK2", "FANCA", "HDAC2", "MYC", "NKX3-1", 
-                       "PIK3CA", "PIK3R1", "PPP2R2A", "PTEN", "RB1", "TMPRSS2", "TP53", 
-                       "ZBTB16","SPOP","MED12","PIK3CA","FOXA1","COL5A1")
+    salf$chromosome != "X" & salf$SYMBOL %in% genes$label
   median_af=median(salf$AF.T[ix],na.rm = T)
   # consider the mutation(s) being present @ 1 copy and there being 2 normal copies, what's the purity?
   t=median_af
@@ -521,7 +539,7 @@ data_line$cnvkit.pval=round(pval,5)
 if (data_line$cnvkit.to.control > 0.5) cn_calls['AR']='AMPLIFIED'
 
 ## Check for amplifications
-for (g in c('CCND1','MYC', 'PIK3CA')) {
+for (g in genes$label) {
   t=purecn_genes[purecn_genes$gene.symbol==g,]
   if (all(is.na(t))) next()  # skip if only mocked purecn data
   if (t$focal & t$C>3) cn_calls[g]='AMPLIFIED' #   calls amplified if focal and >3 copies
@@ -529,12 +547,9 @@ for (g in c('CCND1','MYC', 'PIK3CA')) {
   if (!is.na(t$type)) if (t$type=='AMPLIFIED') cn_calls[g]='AMPLIFIED'   #           or if >5 copies regardless of focal status
 }
 ## Check for focal deletion and LOH of remaining
-for (g in c("APC", "ATM", "BRCA1", "BRCA2", "CCND1", "CDK12", "CDKN1B", 
-            "CDKN2A", "CDKN2B", "CDH1", "CHEK2", "FANCA", "HDAC2", "MLH1", 
-            "MLH3", "MSH2", "MSH3", "MSH6", "NKX3-1", "PIK3R1", 
-            "PMS2", "PPP2R2A", "PTEN", "RB1", "TMPRSS2", "TP53", "ZBTB16")) {
+for (g in genes$label) {
   t=purecn_genes[purecn_genes$gene.symbol==g,] 
-  if (all(is.na(t))) next()  # skip if only mocked purecn data
+  if (all(is.na(t)) | cn_calls[g] == 'AMPLIFIED') next()  # skip if only mocked purecn data or if gene already marked as amplified
   if (nrow(t)>0){
     if (isTRUE(t$loh)) cn_calls[g]='LOSS_OF_HETEROZYGOSITY'
     if (t$focal & t$C==1) cn_calls[g]='FOCAL_DELETION'
@@ -661,7 +676,7 @@ write(exportJson, opts$cna_json)
     #xlim=c(55e6,80e6)
     ylim=c(-1.2,2)
     
-    ar=genes[1,]
+    ar=genes[which(genes$label=="AR"),]
     par(mar=c(2,3,2,.5),xaxs='i',yaxs='i',las=1)
     ix=bins$chromosome=='X' & bins$gene!='Background' & bins$gene!='Antitarget'
     t=bins[ix,]
@@ -875,7 +890,7 @@ write(exportJson, opts$cna_json)
     mtext(text='',side=2,las=1,line=-1.2)
     
     # Gene names
-    text(x = (genes$cumstart+genes$cumend)/2,y = 0.5,labels = genes$label,srt=45,cex=0.4,col='#0000C0CC')
+    text(x = (genes$cumstart+genes$cumend)[order(genes$chromosome, genes$start)]/2,y = rep(c(0.3,0.7), length.out=nrow(genes)),labels = genes$label[order(genes$chromosome, genes$start)],srt=45,cex=0.3,col='#0000C0CC')
     
   }, silent=T)
   
@@ -1091,7 +1106,7 @@ try( {
   mtext(text='',side=2,las=1,line=-1.2)
   
   # Gene names
-  text(x = (genes$cumstart+genes$cumend)/2,y = ymin+0.2,labels = genes$label,srt=45,cex=0.4,col='#0000C0CC')
+  text(x = (genes$cumstart+genes$cumend)[order(genes$chromosome, genes$start)]/2,y = ymin+rep(c(0.1,0.4), length.out=nrow(genes)),labels = genes$label[order(genes$chromosome, genes$start)],srt=45,cex=0.4,col='#0000C0CC')
   
   ## add any structural variants
   try ( {
