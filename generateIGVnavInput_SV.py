@@ -6,7 +6,7 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     """
     vawk '{print $1, $2, $2+1, "P-00356971_svaba", "BND", $5, S$*$AD, S$*$DP}'
     """
-    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor\tDPnormal\tDPtumor NOTES\tGENES\"" + " > "+ output + "_svaba.mut"
+    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor\tDPnormal\tDPtumor NOTES\tGENES\"" + " > "+ output +  "_" + vcftype + "_svaba.mut"
     svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "_svaba\", \"BND\", $5, S$*$AD, S$*$DP}' " + \
                 " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
 
