@@ -10,7 +10,7 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "_svaba\", \"BND\", $5, S$*$AD, S$*$DP}' " + \
                 " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
 
-    subprocess.call(header, svaba_cmd, shell=True)
+    subprocess.call(" && ".join([header, svaba_cmd]), shell=True)
 
 
 def parse_svict(input_vcf, SDID, output):
