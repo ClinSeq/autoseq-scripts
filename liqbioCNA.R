@@ -491,6 +491,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
   purecn_loh$cumend=NA
   for(i in 1:nrow(chrsizes)){
     ix <- which(purecn_loh$chr == chrsizes$chr[i])
+    if (length(ix) == 0) next()  # skip if the chromosome is not present in the loh table
     purecn_loh$cumstart[ix] <- purecn_loh$start[ix] + chrsizes$cumstart[i]
     purecn_loh$cumend[ix] <- purecn_loh$end[ix] + chrsizes$cumstart[i]
   }
