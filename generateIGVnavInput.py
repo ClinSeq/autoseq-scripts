@@ -1,13 +1,18 @@
 #!/usr/bin/env python
-# Author: Sarath Kumar Murugan
 # 
 # Script to Generate IGVNav input file from combined vcf file with Oncogenicity Annoation
 # Written for Liqbio pipeline on 5 March 2019
 # Required Input files - vep annoated vcf file, OncoKB allvariants text file, somatic (or) germline analysis info
 
+###################################################################
+#modified on 26-6-19 : creating symlinks for IGVnav related files##
+###################################################################
+
 
 import argparse
 import vcf
+import os 
+import shutil
 
 def csq_parsing(csq, vcftype):
     # parsing CSQ taq from VeP annotation 
@@ -75,6 +80,30 @@ vcf_reader = vcf.Reader(open(args.vcf, 'r'))
 vcftype = args.vcftype
 
 output_file = open(args.output, 'wr') 
+
+###############generate IGVNAV symblins################################################################
+
+def create_symlink(travers_dir_name, src_dir, igvnav_dirname_dst, suffix),:
+    "Recursively Traverse through the directory and create symlink"
+    for root, dirs, files in os.walk(travers_dir_name):
+        for each_file in files:
+            if each_file.endswith(suffix) and not os.path.exists(os.path.join(igvnav_dirname_dst,each_file)):
+                os.symlink(os.path.join(root,each_file), os.path.join(igvnav_dirname_dst,each_file))
+    return 
+
+
+igvnav_dirname_dst = os.path.join(os.path.dirname(os.path.abspath(args.output)), 'IGVnav')
+src_dir = os.path.abspath(os.path.dirname(os.path.abspath(args.output)))
+
+try:
+    if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
+        for each_input in [('bams','-nodups.bam'), ('bams','.overlapped.bam'), ('variants','.vep.vcf'), ('svs/igv','.mut'), ('svs','.gtf'),('svs','.bam'),('svs/svaba', '.contigs.bam')]:
+            dir_name = os.path.join(src_dir,each_input[0])
+            create_symlink(dir_name, src_dir, igvnav_dirname_dst)
+except Exception as e:
+    print(e)
+
+#######################################################################################################################
 
 # output file headers 
 
