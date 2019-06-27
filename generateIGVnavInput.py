@@ -83,7 +83,7 @@ output_file = open(args.output, 'wr')
 
 ###############generate IGVNAV symblins################################################################
 
-def create_symlink(travers_dir_name, src_dir, igvnav_dirname_dst, suffix),:
+def create_symlink(travers_dir_name, src_dir, igvnav_dirname_dst, suffix):
     "Recursively Traverse through the directory and create symlink"
     for root, dirs, files in os.walk(travers_dir_name):
         for each_file in files:
