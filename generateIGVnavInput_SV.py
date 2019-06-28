@@ -1,6 +1,9 @@
 #!/usr/bin/python
-import argparse
 import subprocess
+import argparse
+import vcf
+import os
+import shutil
 
 def parse_svaba(input_vcf, SDID, output, vcftype):
     """
@@ -58,6 +61,25 @@ def parse_lumpy(input_vcf, SDID, output):
     subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
 
 
+def create_symlink(travers_dir_name, src_dir, igvnav_dirname_dst, suffix):
+    "Recursively Traverse through the directory and create symlink"
+    for root, dirs, files in os.walk(travers_dir_name):
+        for each_file in files:
+            if each_file.endswith(suffix) and not os.path.exists(os.path.join(igvnav_dirname_dst,each_file)):
+                os.symlink(os.path.join(root,each_file), os.path.join(igvnav_dirname_dst,each_file))
+    return
+
+
+igvnav_dirname_dst = os.path.join(os.path.dirname(os.path.abspath(args.output)), 'IGVnav')
+src_dir = os.path.abspath(os.path.dirname(os.path.abspath(args.output)))
+
+try:
+    if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
+    for each_input in [('bams','-nodups.bam'), ('bams','.overlapped.bam'), ('variants','.vep.vcf'), ('svs/igv','.mut'), ('svs','.gtf'),('svs','.bam'),('svs/svaba', '.contigs.bam')]:
+        dir_name = os.path.join(src_dir,each_input[0])
+        create_symlink(dir_name, src_dir, igvnav_dirname_dst, each_input[1])
+except Exception as e:
+    print(e)
 
 parser = argparse.ArgumentParser(description=
     'A MUT file (.mut) is a tab-delimited text file that lists mutations. \
@@ -89,3 +111,6 @@ elif sv_caller == 'lumpy':
     parse_lumpy(vcf, sdid, output)
 elif sv_caller == 'svaba':
     parse_svaba(vcf, sdid, output, vcftype)
+
+
+
