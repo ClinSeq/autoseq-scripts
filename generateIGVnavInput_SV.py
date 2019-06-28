@@ -70,16 +70,6 @@ def create_symlink(travers_dir_name, src_dir, igvnav_dirname_dst, suffix):
     return
 
 
-igvnav_dirname_dst = os.path.join(os.path.dirname(os.path.abspath(args.output)), 'IGVnav')
-src_dir = os.path.abspath(os.path.dirname(os.path.abspath(args.output)))
-
-try:
-    if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
-    for each_input in [('bams','-nodups.bam'), ('bams','.overlapped.bam'), ('variants','.vep.vcf'), ('svs/igv','.mut'), ('svs','.gtf'),('svs','.bam'),('svs/svaba', '.contigs.bam')]:
-        dir_name = os.path.join(src_dir,each_input[0])
-        create_symlink(dir_name, src_dir, igvnav_dirname_dst, each_input[1])
-except Exception as e:
-    print(e)
 
 parser = argparse.ArgumentParser(description=
     'A MUT file (.mut) is a tab-delimited text file that lists mutations. \
@@ -112,5 +102,15 @@ elif sv_caller == 'lumpy':
 elif sv_caller == 'svaba':
     parse_svaba(vcf, sdid, output, vcftype)
 
+igvnav_dirname_dst = os.path.join(os.path.dirname(os.path.abspath(args.output)), 'IGVnav')
+src_dir = os.path.abspath(os.path.dirname(os.path.abspath(args.output)))
+
+try:
+    if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
+    for each_input in [('bams','-nodups.bam'), ('bams','.overlapped.bam'), ('variants','.vep.vcf'), ('svs/igv','.mut'), ('svs','.gtf'),('svs','.bam'),('svs/svaba', '.contigs.bam')]:
+        dir_name = os.path.join(src_dir,each_input[0])
+        create_symlink(dir_name, src_dir, igvnav_dirname_dst, each_input[1])
+except Exception as e:
+    print(e)
 
 
