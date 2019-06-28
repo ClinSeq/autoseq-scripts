@@ -97,7 +97,7 @@ src_dir = os.path.abspath(os.path.dirname(os.path.abspath(args.output)))
 
 try:
     if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
-    for each_input in [('bams','-nodups.bam'), ('bams','.overlapped.bam'), ('variants','.vep.vcf'), ('svs/igv','.mut'), ('svs','.gtf'),('svs','.bam'),('svs/svaba', '.contigs.bam')]:
+    for each_input in [('variants','.vep.vcf')]:
         dir_name = os.path.join(src_dir,each_input[0])
         create_symlink(dir_name, src_dir, igvnav_dirname_dst, each_input[1])
 except Exception as e:
