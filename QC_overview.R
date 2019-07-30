@@ -10,10 +10,8 @@ library(optparse)
 
 # read in command line options
 option_list <- list(
-  make_option(c("-t", "--tumor"), action = "store", type = "character",
-              default = NULL, help = "Tumor (cfDNA) of interest"),
-  make_option(c("-n", "--normal"), action = "store", type = "character",
-              default = NULL, help = "Normal of interest"),
+  make_option(c("-s", "--samples"), action = "store", type = "character",
+              default = NULL, help = "Samples of interest to match with qc file names. If more than one they must be separated with colon, e.g. tumor:normal"),
   make_option(c("-o", "--outfile"), action = "store", type = "character",
               default = "QC_overview.pdf", help = "Path to output pdf file"),
   make_option(c("-m", "--mainpath"), action = "store", type = "character",
@@ -21,8 +19,7 @@ option_list <- list(
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
-tumor_name = opt$tumor
-normal_name = opt$normal
+sample_string = opt$samples
 outfile = opt$outfile
 main_path = opt$mainpath
 
@@ -81,7 +78,8 @@ qc_merge$sample_type = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 4)
 qc_merge$capture = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 7)
 
 # label the samples of interest (soi)
-qc_merge$soi = qc_merge$SAMP %in% c(tumor_name, normal_name)
+samples = strsplit(sample_string, split = ":")[[1]]
+qc_merge$soi = qc_merge$SAMP %in% samples
 
 
 ##################################################################################
