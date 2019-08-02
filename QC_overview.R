@@ -109,41 +109,73 @@ my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_
   print(p)
 }
 
-# Plot histograms 
+# plotting function to create desired scatter plots
+my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
+  ggplot(qc_merge, aes(shape = capture)) +
+    geom_point(aes_string(x = x, y = y), size = 3) +
+    geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "red", size = 3) +
+    scale_alpha_manual(values = c(0.7, 1)) +
+    # scale_color_manual(values = c("antiquewhite", "aliceblue")) +
+    # scale_fill_manual(values = c("antiquewhite", "aliceblue")) +
+    scale_shape_manual(values = c(24, 25), guide = guide_legend(override.aes = list(fill = NA))) +
+    # scale_size_manual(values = c(3, 7), labels = NULL, guide = FALSE) +
+    scale_x_continuous(name = x_string, breaks = xbreaks) +
+    scale_y_continuous(name = y_string, breaks = ybreaks) +
+    facet_wrap(~sample_type, ncol = 1) +
+    ggtitle(title_string, subtitle = "Red symbols show present samples")
+}
+
+# Plot histograms and scatter plots
 cat(paste0("Create plots (saved in ", outfile, ") ...\n"))
 pdf(file = outfile, width=14)
 
-# read count
+# read count histogram
 my_histogram(x = "READ_PAIRS_EXAMINED", binwidth = 5e6, sample_binwidth = 1e5, ybreaks = seq(0,nrow(qc_merge), 1),
              xbreaks = seq(0, 1e12, 1e7), xbreaks_minor = seq(0, 1e12, 5e6), x_string = "number of read pairs", 
              title_string = "Read count")
 
-# duplication
+# duplication histogram
 my_histogram(x = "PERCENT_DUPLICATION", binwidth = 0.05, sample_binwidth = 0.01, ybreaks = seq(0,nrow(qc_merge), 1),
              xbreaks = seq(0, 1, 0.1), xbreaks_minor = seq(0, 1, 0.05), x_string = "duplication rate", 
              title_string = "Duplication rate")
 
-# coverage
+# duplication vs read count scatter plot
+my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
+           x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
+
+# coverage histogram
 my_histogram(x = "MEAN_TARGET_COVERAGE", binwidth = 100, sample_binwidth = 1, ybreaks = seq(0,nrow(qc_merge), 1),
              xbreaks = seq(0, 5000, 500), xbreaks_minor = seq(0, 5000, 100), x_string = "mean target coverage", 
              title_string = "Coverage")
 
-# fold enrichment
+# coverage vs read count scatter plot
+my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
+           x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage rate vs Read count")
+
+# fold enrichment histogram
 my_histogram(x = "FOLD_ENRICHMENT", binwidth = 50, sample_binwidth = 1, ybreaks = seq(0,nrow(qc_merge), 1),
              xbreaks = seq(0, 5000, 100), xbreaks_minor = seq(0, 5000, 50), x_string = "fold enrichment", 
              title_string = "Fold enrichment")
 
-# on-bait rate
+# fold enrichment vs read count scatter plot
+my_scatter(x = "READ_PAIRS_EXAMINED", y = "FOLD_ENRICHMENT", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 100),
+           x_string = "number of read pairs", y_string = "fold enrichment", title_string = "Fold enrichment rate vs Read count")
+
+# on-bait rate histogram
 my_histogram(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", binwidth = 0.05, sample_binwidth = 0.01, ybreaks = seq(0,nrow(qc_merge), 1),
              xbreaks = seq(0, 1, 0.05), xbreaks_minor = seq(0, 1, 0.01), x_string = "dedupped on-bait rate", 
              title_string = "Dedupped on-bait rate")
 
-# insert size
+# on-bait rate vs read count scatter plot
+my_scatter(x = "READ_PAIRS_EXAMINED", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.05),
+           x_string = "number of read pairs", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Read count")
+
+# insert size histogram
 my_histogram(x = "MEDIAN_INSERT_SIZE", binwidth = 2, sample_binwidth = 1, ybreaks = seq(0,nrow(qc_merge), 1),
              xbreaks = seq(0, 1000, 10), xbreaks_minor = seq(0, 1000, 2), x_string = "median insert size", 
              title_string = "Insert size")
 
-# contamination
+# contamination histogram
 my_histogram(x = "contamination", binwidth = 0.1, sample_binwidth = 0.1, ybreaks = seq(0,nrow(qc_merge), 2),
              xbreaks = seq(0, 100, 0.5), xbreaks_minor = seq(0, 100, 0.1), x_string = "contamination, %", 
              title_string = "Contamination")
