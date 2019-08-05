@@ -7,6 +7,7 @@
 
 library(ggplot2)
 library(optparse)
+library(data.table)
 
 # read in command line options
 option_list <- list(
@@ -80,6 +81,16 @@ qc_merge$capture = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 7)
 # label the samples of interest (soi)
 samples = strsplit(sample_string, split = ":")[[1]]
 qc_merge$soi = qc_merge$SAMP %in% samples
+
+
+# create an ouput table for the samples of interest
+soi_table = data.table(qc_merge)[i = soi==TRUE, 
+                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, 
+                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+table_outfile = sub("pdf$", "txt", outfile)
+write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+
+
 
 
 ##################################################################################
