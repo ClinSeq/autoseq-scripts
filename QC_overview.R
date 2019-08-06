@@ -13,6 +13,8 @@ library(data.table)
 option_list <- list(
   make_option(c("-s", "--samples"), action = "store", type = "character",
               default = NULL, help = "Samples of interest to match with qc file names. If more than one they must be separated with colon, e.g. tumor:normal"),
+  make_option(c("-d", "--analysisdir"), action = "store", type = "character",
+              default = NULL, help = "Analysis directory for samples of interest, in order to separate between the same samples that possibly are being run in multiple analyses"),
   make_option(c("-o", "--outfile"), action = "store", type = "character",
               default = "QC_overview.pdf", help = "Path to output pdf file"),
   make_option(c("-m", "--mainpath"), action = "store", type = "character",
@@ -21,6 +23,7 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list = option_list))
 sample_string = opt$samples
+analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
 
@@ -48,43 +51,48 @@ cat("Read in the files...\n")
 HsMetrics = data.frame()
 for (f in hsmetrics_files) {
   SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  HsMetrics = rbind(HsMetrics, cbind(SAMP, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                        header = TRUE, stringsAsFactors = FALSE), 
+  DIR = dirname(dirname(dirname(dirname(f))))
+  HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                           header = TRUE, stringsAsFactors = FALSE), 
                                      stringsAsFactors = FALSE))
 }
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
   SAMP = sub("-markdups-metrics.txt", "", basename(f))
-  MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                                  header = TRUE, stringsAsFactors = FALSE), 
+  DIR = dirname(dirname(dirname(dirname(f))))
+  MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                                     header = TRUE, stringsAsFactors = FALSE), 
                                                stringsAsFactors = FALSE))
 }
 InsertSize = data.frame()
 for (f in insertsize_files) {
   SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  InsertSize = rbind(InsertSize, cbind(SAMP, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                        header = TRUE, stringsAsFactors = FALSE), 
-                                     stringsAsFactors = FALSE))
+  DIR = dirname(dirname(dirname(dirname(f))))
+  InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                             header = TRUE, stringsAsFactors = FALSE), 
+                                       stringsAsFactors = FALSE))
 }
 ContEst = data.frame()
 for (f in contest_files) {
   SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  ContEst = rbind(ContEst, cbind(SAMP, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
-                                       stringsAsFactors = FALSE))
+  DIR = dirname(dirname(f))
+  ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
+                                 stringsAsFactors = FALSE))
 }
 
 # merge the QC tables and add sample type and capture kit
-qc_merge = merge(merge(merge(HsMetrics, MarkDuplicates, by = "SAMP"), InsertSize, by = "SAMP"), ContEst, by = "SAMP")
+qc_merge = merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR"))
 qc_merge$sample_type = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 4)
 qc_merge$capture = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 7)
 
-# label the samples of interest (soi)
+# label the samples of interest (soi) and analysis directory of interest (doi)
 samples = strsplit(sample_string, split = ":")[[1]]
 qc_merge$soi = qc_merge$SAMP %in% samples
+qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
 
 
 # create an ouput table for the samples of interest
-soi_table = data.table(qc_merge)[i = soi==TRUE, 
+soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, 
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
 table_outfile = sub("pdf$", "txt", outfile)
@@ -109,14 +117,14 @@ theme_update(plot.subtitle = element_text(hjust = 0.5))
 my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_minor, x_string, title_string) {
   p = ggplot(qc_merge, aes_string(x = x)) +
     geom_histogram(aes(group = capture, fill = capture), binwidth = binwidth, alpha = 0.7, color = "black") +
-    # geom_freqpoly(binwidth = binwidth, alpha = 0.5) +
-    geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "red") + # the sample of interest
+    geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue") + # the sample of interest
+    geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red") + # the sample of interest
     scale_fill_manual(values = c("antiquewhite", "aliceblue")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_continuous(name = x_string, breaks = xbreaks, minor_breaks = xbreaks_minor) +
     facet_wrap(~sample_type, ncol = 1) +
     ggtitle(paste0(title_string, " (binwidth ", binwidth, ")"), 
-            subtitle = paste0("Red piles show present samples (binwidth ", sample_binwidth, ")"))
+            subtitle = paste0("Red piles show present samples, blue piles show these samples if run earlier (binwidth ", sample_binwidth, ")"))
   print(p)
 }
 
@@ -124,16 +132,14 @@ my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_
 my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
   ggplot(qc_merge, aes(shape = capture)) +
     geom_point(aes_string(x = x, y = y), size = 3) +
-    geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "red", size = 3) +
+    geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3) +
+    geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    # scale_color_manual(values = c("antiquewhite", "aliceblue")) +
-    # scale_fill_manual(values = c("antiquewhite", "aliceblue")) +
     scale_shape_manual(values = c(24, 25), guide = guide_legend(override.aes = list(fill = NA))) +
-    # scale_size_manual(values = c(3, 7), labels = NULL, guide = FALSE) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
-    ggtitle(title_string, subtitle = "Red symbols show present samples")
+    ggtitle(title_string, subtitle = "Red symbols show present samples, blue symbols show these samples if run earlier")
 }
 
 # Plot histograms and scatter plots
