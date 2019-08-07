@@ -172,6 +172,8 @@ suppressPackageStartupMessages(library(PureCN))
 trace(PureCN:::.testGermline, tracer = substitute(if (allowed != hzDev) allowed <- hzDev, list(hzDev = opt$hzdev)), print = FALSE)
 # fix so that if the sample id exists among the vcf sample names, that sample is used as tumor id in vcf, regardless of which sample in vcf was deemed tumor by PureCN internal functions
 trace(runAbsoluteCN, tracer = quote(if (sampleid %in% samples(header(vcf))) tumor.id.in.vcf <- sampleid), at = list(c(44,3,8)), print = FALSE)
+# set NA values in the homozygous variable to FALSE in getSexFromVcf to avoid error from sum(homozygous) when both ref and alt allele lack reads
+trace(getSexFromVcf, tracer = quote(if (any(is.na(homozygous))) homozygous[is.na(homozygous)]=FALSE), at = list(c(11)), print = FALSE)
 library(futile.logger)
 
 debug <- FALSE
