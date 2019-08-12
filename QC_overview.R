@@ -65,12 +65,17 @@ for (f in markduplicates_files) {
                                                stringsAsFactors = FALSE))
 }
 InsertSize = data.frame()
+InsertSize_histogram = data.frame(stringsAsFactors = FALSE)
 for (f in insertsize_files) {
   SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
   DIR = dirname(dirname(dirname(dirname(f))))
   InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                              header = TRUE, stringsAsFactors = FALSE), 
                                        stringsAsFactors = FALSE))
+  InsertSize_histogram = rbind(InsertSize_histogram, 
+                               cbind(SAMP, DIR, read.table(f, skip = 10, sep = "\t",
+                                                           header = TRUE, stringsAsFactors = FALSE),
+                                     stringsAsFactors = FALSE))
 }
 ContEst = data.frame()
 for (f in contest_files) {
@@ -80,15 +85,37 @@ for (f in contest_files) {
                                  stringsAsFactors = FALSE))
 }
 
-# merge the QC tables and add sample type and capture kit
+# add missing values in the insert size histogram table
+for (d in unique(InsertSize_histogram$DIR)) {
+  d1 = subset(InsertSize_histogram, DIR == d)
+  for (s in unique(d1$SAMP)) {
+    d2 = subset(d1, SAMP == s)
+    missing = which(!seq(2,max(d2$insert_size)) %in% d2$insert_size)
+    if (length(missing)>0) {
+      InsertSize_histogram = rbind(InsertSize_histogram,
+                                   data.frame(SAMP = s, DIR = d, insert_size = missing, All_Reads.fr_count = 0))
+    }
+    # print(paste0("Sample ", s, " missing sizes: ", paste0(missing, collapse = ", ")))
+  }
+}
+
+
+
+# merge the QC tables 
 qc_merge = merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR"))
+
+# add sample type and capture kit
 qc_merge$sample_type = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 4)
 qc_merge$capture = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 7)
+InsertSize_histogram$sample_type = sapply(strsplit(InsertSize_histogram$SAMP, split = "-"), "[", 4)
+InsertSize_histogram$capture = sapply(strsplit(InsertSize_histogram$SAMP, split = "-"), "[", 7)
 
 # label the samples of interest (soi) and analysis directory of interest (doi)
 samples = strsplit(sample_string, split = ":")[[1]]
 qc_merge$soi = qc_merge$SAMP %in% samples
 qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
+InsertSize_histogram$soi = InsertSize_histogram$SAMP %in% samples
+InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
 
 # create an ouput table for the samples of interest
@@ -117,8 +144,8 @@ theme_update(plot.subtitle = element_text(hjust = 0.5))
 my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_minor, x_string, title_string) {
   p = ggplot(qc_merge, aes_string(x = x)) +
     geom_histogram(aes(group = capture, fill = capture), binwidth = binwidth, alpha = 0.7, color = "black") +
-    geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue") + # the sample of interest
-    geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red") + # the sample of interest
+    geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue", show.legend = FALSE) + # the sample of interest
+    geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red", show.legend = FALSE) + # the sample of interest
     scale_fill_manual(values = c("antiquewhite", "aliceblue")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_continuous(name = x_string, breaks = xbreaks, minor_breaks = xbreaks_minor) +
@@ -132,8 +159,8 @@ my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_
 my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
   ggplot(qc_merge, aes(shape = capture)) +
     geom_point(aes_string(x = x, y = y), size = 3) +
-    geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3) +
-    geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3) +
+    geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
+    geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
     scale_shape_manual(values = c(24, 25), guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
@@ -146,56 +173,49 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
 cat(paste0("Create plots (saved in ", outfile, ") ...\n"))
 pdf(file = outfile, width=14)
 
-# read count histogram
-my_histogram(x = "READ_PAIRS_EXAMINED", binwidth = 5e6, sample_binwidth = 1e5, ybreaks = seq(0,nrow(qc_merge), 1),
-             xbreaks = seq(0, 1e12, 1e7), xbreaks_minor = seq(0, 1e12, 5e6), x_string = "number of read pairs", 
-             title_string = "Read count")
-
-# duplication histogram
-my_histogram(x = "PERCENT_DUPLICATION", binwidth = 0.05, sample_binwidth = 0.01, ybreaks = seq(0,nrow(qc_merge), 1),
-             xbreaks = seq(0, 1, 0.1), xbreaks_minor = seq(0, 1, 0.05), x_string = "duplication rate", 
-             title_string = "Duplication rate")
-
 # duplication vs read count scatter plot
 my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
            x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
 
-# coverage histogram
-my_histogram(x = "MEAN_TARGET_COVERAGE", binwidth = 100, sample_binwidth = 1, ybreaks = seq(0,nrow(qc_merge), 1),
-             xbreaks = seq(0, 5000, 500), xbreaks_minor = seq(0, 5000, 100), x_string = "mean target coverage", 
-             title_string = "Coverage")
-
 # coverage vs read count scatter plot
 my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
-           x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage rate vs Read count")
+           x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
 
-# fold enrichment histogram
-my_histogram(x = "FOLD_ENRICHMENT", binwidth = 50, sample_binwidth = 1, ybreaks = seq(0,nrow(qc_merge), 1),
-             xbreaks = seq(0, 5000, 100), xbreaks_minor = seq(0, 5000, 50), x_string = "fold enrichment", 
-             title_string = "Fold enrichment")
+# duplication vs fold enrichment scatter plot
+my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 100), ybreaks = waiver(),
+           x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
 
-# fold enrichment vs read count scatter plot
-my_scatter(x = "READ_PAIRS_EXAMINED", y = "FOLD_ENRICHMENT", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 100),
-           x_string = "number of read pairs", y_string = "fold enrichment", title_string = "Fold enrichment rate vs Read count")
-
-# on-bait rate histogram
-my_histogram(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", binwidth = 0.05, sample_binwidth = 0.01, ybreaks = seq(0,nrow(qc_merge), 1),
-             xbreaks = seq(0, 1, 0.05), xbreaks_minor = seq(0, 1, 0.01), x_string = "dedupped on-bait rate", 
-             title_string = "Dedupped on-bait rate")
-
-# on-bait rate vs read count scatter plot
-my_scatter(x = "READ_PAIRS_EXAMINED", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.05),
-           x_string = "number of read pairs", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Read count")
+# on-bait rate vs duplication scatter plot
+my_scatter(x = "PERCENT_DUPLICATION", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = waiver(), ybreaks = seq(0, 1, 0.05),
+           x_string = "duplication rate", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Duplication rate")
 
 # insert size histogram
-my_histogram(x = "MEDIAN_INSERT_SIZE", binwidth = 2, sample_binwidth = 1, ybreaks = seq(0,nrow(qc_merge), 1),
-             xbreaks = seq(0, 1000, 10), xbreaks_minor = seq(0, 1000, 2), x_string = "median insert size", 
-             title_string = "Insert size")
+ggplot(InsertSize_histogram, aes(x = insert_size, y = All_Reads.fr_count, group = interaction (SAMP, DIR),
+                                 linetype = capture)) +
+  geom_line(color = "black", alpha = 0.5) +
+  geom_line(data = subset(InsertSize_histogram, soi&!doi), color = "blue", show.legend = FALSE) +
+  geom_line(data = subset(InsertSize_histogram, soi&doi), color = "red", show.legend = FALSE) +
+  geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
+  geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
+             inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2) +
+  # scale_linetype(guide = guide_legend(override.aes = list(color = "black"))) +
+  scale_x_continuous(name = "insert size", breaks = seq(0,2000,100)) +
+  scale_y_continuous(name = "count") +
+  facet_wrap(~sample_type, ncol = 1) +
+  ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
 
 # contamination histogram
+if (max(qc_merge$contamination) < 20) {
+  xbreaks = seq(0, 100, 0.5)
+  xbreaks_minor = seq(0, 100, 0.1)
+} else {
+  xbreaks = waiver()
+  xbreaks_minor = waiver()
+}
 my_histogram(x = "contamination", binwidth = 0.1, sample_binwidth = 0.1, ybreaks = seq(0,nrow(qc_merge), 2),
-             xbreaks = seq(0, 100, 0.5), xbreaks_minor = seq(0, 100, 0.1), x_string = "contamination, %", 
+             xbreaks = xbreaks, xbreaks_minor = xbreaks_minor, x_string = "contamination, %", 
              title_string = "Contamination")
+
 
 
 dev.off()
