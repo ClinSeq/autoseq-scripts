@@ -600,7 +600,6 @@ write(exportJson, opts$cna_json)
   }, silent=T)
   
   ## File name here:
-  destnation_folder <- dirname(opts$plot_png)
   png(filename = opts$plot_png,width=11.7,height=8.3,units="in",res=600)
   
   ## set screens
@@ -1182,7 +1181,7 @@ p<-p+
 
 p<-ggplotly(p, tooltip = "text")
 x<-plotly_json(p, FALSE)
-filename<-paste(destnation_folder,'/',purity$Sampleid,"_normal.json", sep="")
+filename<-paste(purity$Sampleid,"_normal.json", sep="")
 write(x, filename)
 
 #############end################################  
@@ -1220,7 +1219,7 @@ p<- p + geom_point(aes(salf$DP.T,salf$AF.T),size=1,colour=scol, fill=scol, pch=s
 
 #m<-plotly_json(p)
 x<-plotly_json(p, FALSE)
-filename<-paste(destnation_folder, '/' , purity$Sampleid,"_variant_allelic.json", sep="")
+filename<-paste(purity$Sampleid,"_variant_allelic.json", sep="")
 write(x, filename)
 
 ###### Plot AR #################
@@ -1258,7 +1257,7 @@ p<-ggplot(t)+
 
 p<-ggplotly(p, tooltip = "text")
 x<-plotly_json(p, FALSE)
-filename<-paste(destnation_folder, '/' , purity$Sampleid,"_plot_AR.json", sep="")
+filename<-paste(purity$Sampleid,"_plot_AR.json", sep="")
 write(x, filename)
 
 ###########################################SNP Allelic ratio####################################################
@@ -1521,7 +1520,7 @@ if (nrow(galf)>0) {
 p1<-ggplotly(p1, tooltip = "text", height = 1024)
 x <- subplot(p,p1,shareX = TRUE, nrows = 2)
 x<-plotly_json(x, FALSE)
-filename<-paste(destnation_folder,'/',purity$Sampleid,"_snpratio.json", sep="")
+filename<-paste(purity$Sampleid,"_snpratio.json", sep="")
 write(x, filename)
 
 ###########scatter plot with 24 boxes allelic frequency####################
@@ -1564,7 +1563,7 @@ p <- ggplot( newalf, aes(x=log2, y=smoothedAi_new)) + #, aes(x = 2^alf$log2, y =
 
 p<-ggplotly(p, width = 1024, height = 800)
 x<-plotly_json(p, FALSE)
-filename<-paste(destnation_folder,'/', purity$Sampleid,"_scatter_plot.json", sep="")
+filename<-paste(purity$Sampleid,"_scatter_plot.json", sep="")
 write(x, filename)
 
 ########draw density plot ###################
@@ -1593,7 +1592,7 @@ p1 <- ggplot()+
 
 p1 <-ggplotly(p1)
 x<-plotly_json(p1, FALSE)
-filename<-paste(destnation_folder, '/', purity$Sampleid,"_scatter_density_plot.json", sep="")
+filename<-paste(purity$Sampleid,"_scatter_density_plot.json", sep="")
 write(x, filename)
 
 
