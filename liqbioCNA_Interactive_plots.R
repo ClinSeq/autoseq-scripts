@@ -1519,7 +1519,7 @@ if (nrow(galf)>0) {
 }
 
 p1<-ggplotly(p1, tooltip = "text",  height = 1024)
-x <- subplot(p, p1, shareX = TRUE, nrows=3, which_layout = 1)
+x <- subplot(p, p1, shareX = TRUE, nrows=2, which_layout = 1)
 x<-plotly_json(x, FALSE)
 filename<-paste(destnation_folder,'/',purity$Sampleid,"_snpratio.json", sep="")
 write(x, filename)
