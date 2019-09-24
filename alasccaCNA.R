@@ -381,6 +381,8 @@ right <- q10 & !bix &
 six <- which(segments$chromosome == "10" & segments$end > 89622870 & segments$start < 89731687)
 # for each of those (usually one) which bins are inside it:
 sbix <- NULL; for (i in 1:length(six)) sbix[[i]] <- which(q10 & bins$start >= segments$start[six[i]] & bins$end <= segments$end[six[i]])
+# which segments overlap at least one PTEN exon:
+s.exon.ov <- NULL; for (i in 1:length(six)) s.exon.ov[i] <- any(segments$end[six[i]] >= pten$start & segments$start[six[i]] <= pten$end, na.rm = T)
 
 p.left <- wilcox.test(x = bins$log2[bix],y = bins$log2[left],alternative = 'less')$p.value # p value for del relative to left side control
 p.right <- wilcox.test(x = bins$log2[bix],y = bins$log2[right],alternative = 'less')$p.value # right control
@@ -409,7 +411,8 @@ seg.pten.hom.loss <- FALSE; if (any(l.seg < 5e6)) for (i in 1:length(l.seg)) {
     p.seg.left[i] < significance.threshold &
     p.seg.right[i] < significance.threshold &
     m.seg.left[i] < difference.threshold &
-    m.seg.right[i] < difference.threshold
+    m.seg.right[i] < difference.threshold &
+    s.exon.ov[i]
 }
 pten.hom.loss <- all.pten.hom.loss | seg.pten.hom.loss
 
