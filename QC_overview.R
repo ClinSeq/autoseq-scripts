@@ -90,7 +90,7 @@ for (d in unique(InsertSize_histogram$DIR)) {
   d1 = subset(InsertSize_histogram, DIR == d)
   for (s in unique(d1$SAMP)) {
     d2 = subset(d1, SAMP == s)
-    missing = which(!seq(2,max(d2$insert_size)) %in% d2$insert_size)
+    missing = which(!seq(2,max(d2$insert_size)) %in% d2$insert_size) + 1
     if (length(missing)>0) {
       InsertSize_histogram = rbind(InsertSize_histogram,
                                    data.frame(SAMP = s, DIR = d, insert_size = missing, All_Reads.fr_count = 0))
