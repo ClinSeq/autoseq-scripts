@@ -146,7 +146,7 @@ my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_
     geom_histogram(aes(group = capture, fill = capture), binwidth = binwidth, alpha = 0.7, color = "black") +
     geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue")) +
+    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_continuous(name = x_string, breaks = xbreaks, minor_breaks = xbreaks_minor) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -162,7 +162,7 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    scale_shape_manual(values = c(24, 25), guide = guide_legend(override.aes = list(fill = NA))) +
+    scale_shape_manual(values = c(24, 25, 21, 22), guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
