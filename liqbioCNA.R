@@ -500,8 +500,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
 ### Calculate/extract purity
 {
   # select high-confidence mutations for purity estimate (not AR)
-  ix=salf$AO.T>=12 & salf$hasConsequence & salf$FILTER == "PASS" & 
-    salf$chromosome != "X" & salf$SYMBOL %in% genes$label
+  ix=salf$AO.T>=12 & salf$chromosome != "X" & salf$chromosome != "Y"
   median_af=median(salf$AF.T[ix],na.rm = T)
   # consider the mutation(s) being present @ 1 copy and there being 2 normal copies, what's the purity?
   t=median_af

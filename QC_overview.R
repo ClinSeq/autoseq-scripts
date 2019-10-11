@@ -90,7 +90,7 @@ for (d in unique(InsertSize_histogram$DIR)) {
   d1 = subset(InsertSize_histogram, DIR == d)
   for (s in unique(d1$SAMP)) {
     d2 = subset(d1, SAMP == s)
-    missing = which(!seq(2,max(d2$insert_size)) %in% d2$insert_size)
+    missing = which(!seq(2,max(d2$insert_size)) %in% d2$insert_size) + 1
     if (length(missing)>0) {
       InsertSize_histogram = rbind(InsertSize_histogram,
                                    data.frame(SAMP = s, DIR = d, insert_size = missing, All_Reads.fr_count = 0))
@@ -146,7 +146,7 @@ my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_
     geom_histogram(aes(group = capture, fill = capture), binwidth = binwidth, alpha = 0.7, color = "black") +
     geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue")) +
+    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_continuous(name = x_string, breaks = xbreaks, minor_breaks = xbreaks_minor) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -162,7 +162,7 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    scale_shape_manual(values = c(24, 25), guide = guide_legend(override.aes = list(fill = NA))) +
+    scale_shape_manual(values = c(24, 25, 21, 22), guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -182,11 +182,11 @@ my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(
            x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
 
 # duplication vs fold enrichment scatter plot
-my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 100), ybreaks = waiver(),
+my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
            x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
 
 # on-bait rate vs duplication scatter plot
-my_scatter(x = "PERCENT_DUPLICATION", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = waiver(), ybreaks = seq(0, 1, 0.05),
+my_scatter(x = "PERCENT_DUPLICATION", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = waiver(), ybreaks = waiver(),
            x_string = "duplication rate", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Duplication rate")
 
 # insert size histogram
@@ -205,9 +205,9 @@ ggplot(InsertSize_histogram, aes(x = insert_size, y = All_Reads.fr_count, group 
   ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
 
 # contamination histogram
-if (max(qc_merge$contamination) < 20) {
-  xbreaks = seq(0, 100, 0.5)
-  xbreaks_minor = seq(0, 100, 0.1)
+if (max(qc_merge$contamination) < 5) {
+  xbreaks = seq(0.1, 6, 0.2)
+  xbreaks_minor = seq(0, 6, 0.1)
 } else {
   xbreaks = waiver()
   xbreaks_minor = waiver()
