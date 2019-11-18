@@ -13,7 +13,7 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor \
              \tDPnormal\tDPtumor\tGENES\"" + " > " + output + "_" + vcftype + "_svaba.mut"
-    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "\",\"I$SVTYPE\", $5, S$*$AD,S$*$DP}'" + \
+    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "\" , I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
                 " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
     
     # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " + output + \
@@ -168,7 +168,10 @@ def combine_mut(input_dir, output_dir):
             sup_reads = '$8' if vcftype == 'SOMATIC' else '$7'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " +\
                         file + " >> " + output_dir + "/annotate_combined_sv.txt")
-
+        elif 'svcaller.mut' in file:
+            vcftype = 'cfdna' if '-T-' in file else  'germline'
+            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
+                        + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
     subprocess.call(" && ".join(cmd), shell=True)
 
     return output_dir + "/annotate_combined_sv.txt"
