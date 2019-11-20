@@ -13,7 +13,7 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor \
              \tDPnormal\tDPtumor\tGENES\"" + " > " + output + "_" + vcftype + "_svaba.mut"
-    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "\" , I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
+    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "\",\"I$SVTYPE\", $5, S$*$AD,S$*$DP}'" + \
                 " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
     
     # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " + output + \
@@ -168,10 +168,7 @@ def combine_mut(input_dir, output_dir):
             sup_reads = '$8' if vcftype == 'SOMATIC' else '$7'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " +\
                         file + " >> " + output_dir + "/annotate_combined_sv.txt")
-        elif 'svcaller.mut' in file:
-            vcftype = 'cfdna' if '-T-' in file else  'germline'
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
-                        + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
+
     subprocess.call(" && ".join(cmd), shell=True)
 
     return output_dir + "/annotate_combined_sv.txt"
@@ -224,16 +221,18 @@ def gene_annotation(chrom, start, end, genes, design):
 
 def annotate_combined_sv(combined_file, genes, pancancer, output):
     output_file = open(output, 'w')
-    print (combined_file)
     with open(combined_file, 'r') as file:
         header = file.readline()
         output_file.write("\t".join(['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
-            'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE', 'GENE_A', 'IN_DESIGN_A', 'GENE_B', 'IN_DESIGN_B', "GENE_A-GENE_B-sorted"]) + '\n')
+            'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
+            'GENE_A', 'IN_DESIGN_A', 'GENE_B', 'IN_DESIGN_B', "GENE_A-GENE_B-sorted"]) + '\n')
         for line in file.readlines():
             data = line.strip().split('\t')
             chrom_a = data[0]
             start_a = data[1]
             end_a = data[2]
+            igv_coord_a = chrom_a + ':' + str(start_a)
+            igv_coord_b = ''
             svtype = data[3]
             tool = data[4]
             sdid = data[5].split('_')[0]
@@ -244,11 +243,13 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
                 chrom_b = filter(str.isdigit, data[7].split(':')[0])
                 start_b = int(filter(str.isdigit, data[7].split(':')[1]))
                 end_b = start_b + 1
+                igv_coord_b = chrom_b + ':' + str(start_b)
             else:
                 chrom_b = 'NA'
                 start_b = 'NA'
                 end_b = 'NA'
 
+            igv_coord = ' '.join([igv_coord_a, igv_coord_b])
             gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
 
             if chrom_b != 'NA':
@@ -261,7 +262,8 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
             gene_a_b_sorted = ",".join(gene_a_b)
 
 	    output_file.write("\t".join(map(str, [chrom_a, start_a, end_a, chrom_b, start_b,
-                             end_b, svtype, int(end_a)-int(start_a), sup_reads, tool, sdid, sample, gene_a, in_gene_a, gene_b, in_gene_b, gene_a_b_sorted])) + '\n')
+                             end_b, igv_coord, svtype, int(end_a)-int(start_a), sup_reads, tool, 
+                             sdid, sample, gene_a, in_gene_a, gene_b, in_gene_b, gene_a_b_sorted])) + '\n')
 
 
 if __name__ == "__main__":
