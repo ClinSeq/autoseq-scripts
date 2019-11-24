@@ -150,7 +150,7 @@ for record in vcf_reader:
         tumor_alt = sum(tumor['DP4'][2:])
         tumor_vaf = tumor['VAF']
 
-        if filter_col == 'PASS' and (impact == 'HIGH' or impact == 'MODERATE'):
+        if (filter_col == 'PASS' or filter_col == 'LowQual') and (impact == 'HIGH' or impact == 'MODERATE'):
 
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , record.REF, record.ALT, '', '', '', gene, impact, canonical_trans['Consequence'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, tumor_vaf, normal_dp, normal_alt, normal_vaf, clinsig, gnomAD, brcaEx, oncogenicity])) + "\n")
     
