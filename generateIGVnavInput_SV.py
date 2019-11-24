@@ -13,11 +13,9 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor \
              \tDPnormal\tDPtumor\tGENES\"" + " > " + output + "_" + vcftype + "_svaba.mut"
-    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + "\",\"I$SVTYPE\", $5, S$*$AD,S$*$DP}'" + \
+    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + '_svaba_' + vcftype + "\",I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
                 " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
-    
-    # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " + output + \
-    #       "_" + vcftype + "_svaba.mut >> " + output_dir + "/annotate_combined_sv.txt"
+
     subprocess.call(" && ".join([header, svaba_cmd]), shell=True)
 
 
@@ -34,30 +32,30 @@ def parse_svict(input_vcf, SDID, output, vcftype):
                                                          I$SVTYPE, $5, I$SUPPORT}' $input.vcf
     """
     header8 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-              " > " + output + "_" + vcftype + "_svict_SR8.mut"
+              " > " + output + "_svict_SR8.mut"
 
     header12 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-               " > " + output + "_" + vcftype + "_svict_SR12.mut"
+               " > " + output + "_svict_SR12.mut"
 
     sup_8 = "vawk '{if (I$SUPPORT>8 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
-            SDID + "\", I$SVTYPE, \"<INS>\", I$SUPPORT ;" + \
+            SDID + '_svict_' + vcftype  + "\", I$SVTYPE, \"<INS>\", I$SUPPORT ;" + \
             " else if (I$SUPPORT>8 && I$SVTYPE ~ \"INV\" ) print $1, $2, I$END, \"" + \
-            SDID + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
+            SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
             " else if (I$SUPPORT>8 && I$SVTYPE ~ \"DEL\" ) print $1, $2, I$END, \"" + \
-            SDID + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT ; " + \
+            SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT ; " + \
             " else if (I$SUPPORT>8 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
-            SDID + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
-            " >> " + output + "_" + vcftype + "_svict_SR8.mut"
+            SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
+            " >> " + output + "_svict_SR8.mut"
 
     sup_12 = "vawk '{if (I$SUPPORT>12 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
-             SDID + "\", I$SVTYPE, \"<INS>\", I$SUPPORT ; " + \
+             SDID + '_svict_' + vcftype +"\", I$SVTYPE, \"<INS>\", I$SUPPORT ; " + \
              " else if (I$SUPPORT>12 && I$SVTYPE ~ \"INV\" ) print $1, $2, I$END, \"" + \
-             SDID + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
+             SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
              " else if (I$SUPPORT>12 && I$SVTYPE ~ \"DEL\" ) print $1, $2, I$END, \"" + \
-             SDID + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT ;" + \
+             SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT ;" + \
              " else if (I$SUPPORT>12 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
-             SDID + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
-             " >> " + output + "_" + vcftype +"_svict_SR12.mut"
+             SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
+             " >> " + output + "_svict_SR12.mut"
 
     # cmd = "awk ' NR>1 {OFS=\"\\t\"; print $1, $2, $3, $5,\"svict\", $4,\"" + vcftype + "\", $6, $7}' " + output + "_SR8.mut "\
     #       + " >> " + output_dir + "/annotate_combined_sv.txt"
@@ -78,12 +76,12 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
     header500_sup_24 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
                        " > " + output + "_lumpy_len500_SU24.mut"
 
-    len1k_sup_50 = "vawk '{if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \""+ SDID +"\", I$SVTYPE, $5, \"NA\", I$SU ;"  + \
-                " else if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \""+ SDID +"\", I$SVTYPE, $5, I$SU}' " + input_vcf + \
+    len1k_sup_50 = "vawk '{if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, \"NA\", I$SU ;"  + \
+                " else if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, I$SU}' " + input_vcf + \
                 " >> " + output + "_lumpy_len1k_SU50.mut"
 
-    len500_sup_24 = "vawk '{if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \"" + SDID + "\", I$SVTYPE, $5, I$SU ;" + \
-                " else if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \"" + SDID + "\", I$SVTYPE, $5, I$SU }' " + input_vcf + \
+    len500_sup_24 = "vawk '{if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU ;" + \
+                " else if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU }' " + input_vcf + \
                 " >> " + output + "_lumpy_len500_SU24.mut"
   
     # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"" + vcftype + "\", $6, $7}' " + output + "_lumpy_len500_SU24.mut" +  " >> " + output_dir + "/annotate_combined_sv.txt"
@@ -91,7 +89,7 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
     subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
 
 
-def parse_gtf(gtf, sdid):
+def parse_gtf(gtf, sdid, vcftype):
     if 'DEL' in gtf:
         svtype = '<DEL>'
     elif 'DUP' in gtf:
@@ -101,6 +99,7 @@ def parse_gtf(gtf, sdid):
     elif 'INV' in gtf:
         svtype = '<INV>'
 
+    sdid = sdid + '_svcaller_' + vcftype
     events_list = []
     gtf_set = set()
     with open(gtf, 'r') as gtf_fh:
@@ -136,7 +135,7 @@ def parse_svcaller(input_dir, SDID, output, vcftype):
     sdid = 'P-' + re.search("P-(\d+)-", SDID).group(1)
     events = []
     for gtf in gtf_files:
-        events.extend(parse_gtf(gtf, sdid))
+        events.extend(parse_gtf(gtf, sdid, vcftype))
 
     with open(mut_file, 'w') as mut_fh:
         mut_fh.write("\t".join(['CHROM','START','END','SDID','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
@@ -167,7 +166,12 @@ def combine_mut(input_dir, output_dir):
             vcftype = 'somatic' if 'somatic' in file else 'germline'
             sup_reads = '$8' if vcftype == 'SOMATIC' else '$7'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " +\
-                        file + " >> " + output_dir + "/annotate_combined_sv.txt")
+                file + " >> " + output_dir + "/annotate_combined_sv.txt")
+        elif 'svcaller.mut' in file:
+            vcftype = 'cfdna' if '-T-' in file else  'germline'
+            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
+                        + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
+
 
     subprocess.call(" && ".join(cmd), shell=True)
 
