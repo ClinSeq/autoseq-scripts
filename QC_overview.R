@@ -27,6 +27,14 @@ analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
 
+# for testing:
+# system("umount ~/anchorageMountpointR2")
+# system("sshfs rebber@anchorage:/nfs/CLINSEQ/PSFF/autoseq-output/ ~/anchorageMountpointR2")
+# sample_string = "PSFF-P-00368719-N-03627591-KH-PN:PSFF-P-00368719-CFDNA-03627592-KH-PN"
+# analysis_dir = "~/anchorageMountPointR2/P-00368719/PSFF-P-00368719-CFDNA-03627592-KH20191120-PN20191121_PSFF-P-00368719-N-03627591-KH20191120-PN20191121"
+# outfile = "~/scratch/QC_overview.pdf"
+# main_path = "~/anchorageMountPointR2"
+
 
 # find the qc files for all samples
 cat("Find all available qc files...\n")
@@ -38,12 +46,15 @@ insertsize_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")),
                            pattern = "picard-insertsize.txt$", recursive = TRUE, full.names = TRUE)
 contest_files = dir(Sys.glob(paste0(main_path, "/*/*/contamination")), 
                     pattern = "contest.txt$", recursive = TRUE, full.names = TRUE)
+msings_files = dir(path = Sys.glob(paste0(main_path, "/*/*/msings*")),
+                   pattern = paste0("MSI_Analysis.txt$"), full.names = TRUE, recursive = TRUE)
 
 # remove files from old pipeline (modified before 2019-04-30)
 hsmetrics_files = hsmetrics_files[file.mtime(hsmetrics_files) > as.POSIXct("2019-04-30")]
 markduplicates_files = markduplicates_files[file.mtime(markduplicates_files) > as.POSIXct("2019-04-30")]
 insertsize_files = insertsize_files[file.mtime(insertsize_files) > as.POSIXct("2019-04-30")]
 contest_files = contest_files[file.mtime(contest_files) > as.POSIXct("2019-04-30")]
+msings_files = msings_files[file.mtime(msings_files) > as.POSIXct("2019-04-30")]
 
 
 # read in the files
@@ -84,6 +95,15 @@ for (f in contest_files) {
   ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
                                  stringsAsFactors = FALSE))
 }
+msings = data.frame()
+for (f in msings_files) {
+  SAMP = sub("-nodups.MSI_Analysis.txt", "", basename(f))
+  DIR = dirname(dirname(dirname(f)))
+  msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+}
+colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
+msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
+msings$msing_score = as.numeric(msings$msing_score)
 
 # add missing values in the insert size histogram table
 for (d in unique(InsertSize_histogram$DIR)) {
@@ -102,7 +122,8 @@ for (d in unique(InsertSize_histogram$DIR)) {
 
 
 # merge the QC tables 
-qc_merge = merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR"))
+qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
+                 msings, by = c("SAMP", "DIR"), all.x = TRUE)
 
 # add sample type and capture kit
 qc_merge$sample_type = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 4)
@@ -121,7 +142,7 @@ InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 # create an ouput table for the samples of interest
 soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, 
-                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
 table_outfile = sub("pdf$", "txt", outfile)
 write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 
@@ -215,6 +236,10 @@ if (max(qc_merge$contamination) < 5) {
 my_histogram(x = "contamination", binwidth = 0.1, sample_binwidth = 0.1, ybreaks = seq(0,nrow(qc_merge), 2),
              xbreaks = xbreaks, xbreaks_minor = xbreaks_minor, x_string = "contamination, %", 
              title_string = "Contamination")
+
+# msings score vs read count scatter plot
+my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
+             x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
 
 
 
