@@ -37,24 +37,24 @@ def parse_svict(input_vcf, SDID, output, vcftype):
     header12 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
                " > " + output + "_svict_SR12.mut"
 
-    sup_8 = "vawk '{if (I$SUPPORT>8 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
+    sup_8 = "vawk '{if (I$SUPPORT>8 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
+            SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
+            " else if (I$SUPPORT>8 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
             SDID + '_svict_' + vcftype  + "\", I$SVTYPE, \"<INS>\", I$SUPPORT ;" + \
             " else if (I$SUPPORT>8 && I$SVTYPE ~ \"INV\" ) print $1, $2, I$END, \"" + \
             SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
             " else if (I$SUPPORT>8 && I$SVTYPE ~ \"DEL\" ) print $1, $2, I$END, \"" + \
             SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT ; " + \
-            " else if (I$SUPPORT>8 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
-            SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
             " >> " + output + "_svict_SR8.mut"
 
-    sup_12 = "vawk '{if (I$SUPPORT>12 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
+    sup_12 = "vawk '{if (I$SUPPORT>12 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
+             SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
+             " else if (I$SUPPORT>12 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
              SDID + '_svict_' + vcftype +"\", I$SVTYPE, \"<INS>\", I$SUPPORT ; " + \
              " else if (I$SUPPORT>12 && I$SVTYPE ~ \"INV\" ) print $1, $2, I$END, \"" + \
              SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
              " else if (I$SUPPORT>12 && I$SVTYPE ~ \"DEL\" ) print $1, $2, I$END, \"" + \
              SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT ;" + \
-             " else if (I$SUPPORT>12 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
-             SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT}' " + input_vcf + \
              " >> " + output + "_svict_SR12.mut"
 
     # cmd = "awk ' NR>1 {OFS=\"\\t\"; print $1, $2, $3, $5,\"svict\", $4,\"" + vcftype + "\", $6, $7}' " + output + "_SR8.mut "\
