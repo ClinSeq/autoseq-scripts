@@ -155,20 +155,21 @@ def combine_mut(input_dir, output_dir):
     for file in files:
         vcftype = ''
         sup_reads = ''
+        filebase = os.path.basename(file)
         if 'svict_SR8' in file:
-            vcftype = 'cfdna' if 'CFDNA' in file else 'germline'
+            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
             cmd.append("awk ' NR>1 {OFS=\"\\t\"; print $1, $2, $3, $5,\"svict\", $4,\"" + vcftype + "\", $6, $7}' " \
                         + file + " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'lumpy_len500_SU24' in file:
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"somatic\", $6, $7}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'svaba.mut' in file:
-            vcftype = 'somatic' if 'somatic' in file else 'germline'
+            vcftype = 'somatic' if 'somatic' in filebase else 'germline'
             sup_reads = '$8' if vcftype == 'SOMATIC' else '$7'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " +\
                 file + " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'svcaller.mut' in file:
-            vcftype = 'cfdna' if '-T-' in file else  'germline'
+            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
