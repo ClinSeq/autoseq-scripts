@@ -1292,7 +1292,7 @@ p<-ggplot()+
   geom_vline(aes(xintercept =(genes$cumstart+genes$cumend)/2,
                  text=sprintf("chr: %s <br>gene:  %s <br>start:%2f <br>end:%2f",
                       genes$chromosome, 
-                      genes$label[order(genes$chromosome, genes$start)],
+                      genes$label,
                       genes$start,
                       genes$end
                       ), 
@@ -1436,7 +1436,7 @@ p1<-ggplot()+
   geom_vline(aes(xintercept =(genes$cumstart+genes$cumend)/2,
                  text=sprintf("chr: %s <br>gene:  %s <br>start:%2f <br>end:%2f",
                               genes$chromosome, 
-                              genes$label[order(genes$chromosome, genes$start)],
+                              genes$label,
                               genes$start,
                               genes$end
                  ), 
