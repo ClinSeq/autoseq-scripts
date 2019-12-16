@@ -89,6 +89,16 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
     subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
 
 
+def parse_gridss(input_vcf, SDID, output, vcftype):
+    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
+                      " > " + output + "_pass_gridss.mut"
+
+    gridss_cmd = "vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " + input_vcf + \
+                 " >> " + output + "_pass_gridss.mut"
+    
+    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)    
+
+
 def parse_gtf(gtf, sdid, vcftype):
     if 'DEL' in gtf:
         svtype = '<DEL>'
@@ -141,7 +151,7 @@ def parse_svcaller(input_dir, SDID, output, vcftype):
         mut_fh.write("\t".join(['CHROM','START','END','SDID','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
         for event in events:
             mut_fh.write('\t'.join(map(str, event)) + '\n')
-
+ 
 
 def combine_mut(input_dir, output_dir):
 
@@ -172,7 +182,10 @@ def combine_mut(input_dir, output_dir):
             vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
-
+        elif 'gridss.mut' in file:
+            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'            
+            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"gridss\", $4, \"" + vcftype + "\", $6, $7}' " \
+                        + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
     subprocess.call(" && ".join(cmd), shell=True)
 
@@ -302,9 +315,7 @@ if __name__ == "__main__":
     output = args.output
     target_bed = args.targetBed
 
-
     output_dir = os.path.dirname(output)
-
 
     if sv_caller == 'svict':
         parse_svict(input_file, sdid, output, vcftype)
@@ -314,6 +325,8 @@ if __name__ == "__main__":
         parse_svaba(input_file, sdid, output, vcftype)
     elif sv_caller == 'svcaller':
         parse_svcaller(input_file, sdid, output, vcftype)
+    elif sv_caller == 'gridss':
+        parse_gridss(input_file, sdid, output, vcftype)
 
     if annotBed:
         combined_input = combine_mut(input_file, output_dir)
