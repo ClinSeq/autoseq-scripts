@@ -91,7 +91,7 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
 
 def parse_gridss(input_vcf, SDID, output, vcftype):
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_pass_gridss.mut"
+                      " > " + output + "_pass_gridss.mut" 
 
     gridss_cmd = "vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " + input_vcf + \
                  " >> " + output + "_pass_gridss.mut"
@@ -248,25 +248,32 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
             data = line.strip().split('\t')
             chrom_a = data[0]
             start_a = data[1]
-            end_a = data[2]
+            end_a = int(data[1]) + 1 
+            tool = data[4]
             igv_coord_a = chrom_a + ':' + str(start_a)
+            chrom_b = 'NA'
+            start_b = 'NA'
+            end_b = 'NA'
+
             igv_coord_b = ''
             svtype = data[3]
-            tool = data[4]
+            
             sdid = data[5].split('_')[0]
             sample = data[6]
             sup_reads = data[8] if len(data) == 9 else '.'
+
+            if tool == 'svcaller' or tool == 'lumpy':
+                chrom_b = data[0]
+                start_b = data[2]
+                end_b = int(data[2]) + 1
+                igv_coord_b = chrom_b + ':' + str(start_b)
 
             if ':' in data[7]:
                 chrom_b = filter(str.isdigit, data[7].split(':')[0])
                 start_b = int(filter(str.isdigit, data[7].split(':')[1]))
                 end_b = start_b + 1
                 igv_coord_b = chrom_b + ':' + str(start_b)
-            else:
-                chrom_b = 'NA'
-                start_b = 'NA'
-                end_b = 'NA'
-
+            
             igv_coord = ' '.join([igv_coord_a, igv_coord_b])
             gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
 
