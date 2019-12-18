@@ -1305,7 +1305,7 @@ if (!is.null(bins)) {
     geom_point(aes((bins$cumstart[!ix]+bins$cumend[!ix])/2,bins$log2[!ix]), cex=0.5) +
     geom_segment(
       aes(x = segments$cumstart, y = segments$log2, xend = segments$cumend, yend = segments$log2, 
-          text=sprintf("CNVs:<br>: start: %f <br> end: %f <br> length: %f", segments$cumstart, segments$cumend, segments$cumend-segments$cumstart + 1 )
+          text=sprintf("CNVs:<br>: chr: %s <br> log2: %f <br> start: %f <br> end: %f <br> length: %f", segments$chromosome, segments$log2, segments$cumstart, segments$cumend, segments$cumend-segments$cumstart + 1 )
       ),
       size=0.80, 
       show.legend=F,
