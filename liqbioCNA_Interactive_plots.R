@@ -1292,7 +1292,7 @@ p<-ggplot()+
   geom_vline(aes(xintercept =(genes$cumstart+genes$cumend)/2,
                  text=sprintf("chr: %s <br>gene:  %s <br>start:%2f <br>end:%2f",
                       genes$chromosome, 
-                      genes$label[order(genes$chromosome, genes$start)],
+                      genes$label,
                       genes$start,
                       genes$end
                       ), 
@@ -1304,9 +1304,15 @@ if (!is.null(bins)) {
     geom_line(aes((bins$cumstart[!ix]+bins$cumend[!ix])/2,bins$log2[!ix]),  col = '#00000020')+
     geom_point(aes((bins$cumstart[!ix]+bins$cumend[!ix])/2,bins$log2[!ix]), cex=0.5) +
     geom_segment(
-      aes(x = segments$cumstart, y = segments$log2, xend = segments$cumend, yend = segments$log2, 
-          text=sprintf("CNVs:<br>: start: %f <br> end: %f <br> length: %f", segments$cumstart, segments$cumend, segments$cumend-segments$cumstart + 1 )
-      ),
+      aes(x = segments$cumstart, y = segments$log2, xend = segments$cumend, yend = segments$log2,
+          text=sprintf("CNVs:<br>chr: %s <br> log2: %f <br> start: %f <br> end: %f <br> depth: %f <br> probes: %f <br>",
+                       segments$chromosome,
+                       segments$log2,
+                       segments$start,
+                       segments$end,
+                       segments$depth,
+                       segments$probes)
+      ),  
       size=0.80, 
       show.legend=F,
       col='#00C000CC'
@@ -1375,32 +1381,73 @@ if (!is.null(bins)) {
   
   ix=purecn_loh$C==0
   if (sum(ix, na.rm=TRUE)>0){
-    p <- p + geom_point(aes(x=(purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2, y=-1.8,
-                            text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ", 
-                                         purecn_loh$chr, 
-                                         purecn_loh$cumstart, 
-                                         purecn_loh$cumend, 
-                                         purecn_loh$type, 
-                                         purecn_loh$arm )
-                            
-                            ), shape =24, size =2, colour="blue", fill = "blue")
+    #p <- p + geom_point(aes(x=(purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2, y=-1.8,
+    #                        text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ", 
+    #                                     purecn_loh$chr, 
+    #                                     purecn_loh$cumstart, 
+    #                                     purecn_loh$cumend, 
+    #                                     purecn_loh$type, 
+    #                                     purecn_loh$arm )
+    #                        
+    #                        ), shape =24, size =2, colour="blue", fill = "blue")
+    
+      xstart_n <- purecn_loh$cumstart[ix]
+      xend_n   <- purecn_loh$cumend[ix]
+      chr      <- purecn_loh$chr[ix]
+      type     <-  purecn_loh$type[ix]
+      arm      <- purecn_loh$arm[ix]
+      cumstart <- purecn_loh$cumstart[ix]
+      cumend   <- purecn_loh$cumend[ix]
+      c <-  purecn_loh$C[ix]
+      df_c_new = data.frame(xstart_n, xend_n, chr,  type, arm , cumstart, cumend, c )
+
+    p <- p + geom_point(data = df_c_new, aes(x=(df_c_new$cumstart+df_c_new$cumend)/2, y=-1.8,
+                            text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ",
+                                         df_c_new$chr,
+                                         df_c_new$cumstart,
+                                         df_c_new$cumend,
+                                         df_c_new$type,
+                                         df_c_new$arm )
+
+                           ), shape =24, size =2, colour="blue", fill = "blue")
+
   }
   
 }
 
 # chromosome lines
-p <- p + geom_vline(aes(xintercept = chrsizes$cumstart+chrsizes$size,
-                        text=sprintf("chromosome:  %s", chrsizes$chr))) +
-  geom_text(aes(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,label = n_strvs$type,
+#p <- p + geom_vline(aes(xintercept = chrsizes$cumstart+chrsizes$size,
+#                        text=sprintf("chromosome:  %s", chrsizes$chr))) +
+#  geom_text(aes(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,label = n_strvs$type,
+#                text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", n_strvs$chr, n_strvs$V3, n_strvs$V7)
+#                ),
+#            col='blue',cex=2,srt=90, size=4) +
+  # add any stuctural variants
+#   
+#  geom_text(aes(x = (t_strvs$cumstart+t_strvs$cumend)/2,y = ymax-0.2,label = t_strvs$type,
+#                text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", t_strvs$chr, t_strvs$V3, t_strvs$V7)
+#                ),
+#          col='red',cex=2,srt=90, size=4)
+
+
+try(  {
+  p <- p + geom_vline(aes(xintercept = chrsizes$cumstart+chrsizes$size,
+                        text=sprintf("chromosome:  %s", chrsizes$chr)))
+  if( dim(n_strvs) != NULL ) {
+     p <- p + geom_text(aes(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,label = n_strvs$type,
                 text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", n_strvs$chr, n_strvs$V3, n_strvs$V7)
                 ),
-            col='blue',cex=2,srt=90, size=4) +
+            col='blue',cex=2,srt=90, size=4)
+  }
   # add any stuctural variants
-   
-  geom_text(aes(x = (t_strvs$cumstart+t_strvs$cumend)/2,y = ymax-0.2,label = t_strvs$type,
+   if( dim(t_strvs) != NULL ) {
+      p <- p + geom_text(aes(x = (t_strvs$cumstart+t_strvs$cumend)/2,y = ymax-0.2,label = t_strvs$type,
                 text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", t_strvs$chr, t_strvs$V3, t_strvs$V7)
                 ),
           col='red',cex=2,srt=90, size=4)
+ }
+}, silent=T)
+
 
 p<-ggplotly(p, tooltip = "text", height = 1024) # this p will be used in subplot
 #####################snp plot with germline and stomatic#######################################################
@@ -1436,7 +1483,7 @@ p1<-ggplot()+
   geom_vline(aes(xintercept =(genes$cumstart+genes$cumend)/2,
                  text=sprintf("chr: %s <br>gene:  %s <br>start:%2f <br>end:%2f",
                               genes$chromosome, 
-                              genes$label[order(genes$chromosome, genes$start)],
+                              genes$label,
                               genes$start,
                               genes$end
                  ), 
