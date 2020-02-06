@@ -89,6 +89,16 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
     subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
 
 
+def parse_gridss(input_vcf, SDID, output, vcftype):
+    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
+                      " > " + output + "_pass_gridss.mut" 
+
+    gridss_cmd = "vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " + input_vcf + \
+                 " >> " + output + "_pass_gridss.mut"
+    
+    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)    
+
+
 def parse_gtf(gtf, sdid, vcftype):
     if 'DEL' in gtf:
         svtype = '<DEL>'
@@ -141,7 +151,7 @@ def parse_svcaller(input_dir, SDID, output, vcftype):
         mut_fh.write("\t".join(['CHROM','START','END','SDID','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
         for event in events:
             mut_fh.write('\t'.join(map(str, event)) + '\n')
-
+ 
 
 def combine_mut(input_dir, output_dir):
 
@@ -172,7 +182,10 @@ def combine_mut(input_dir, output_dir):
             vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
-
+        elif 'gridss.mut' in file:
+            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'            
+            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"gridss\", $4, \"" + vcftype + "\", $6, $7}' " \
+                        + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
     subprocess.call(" && ".join(cmd), shell=True)
 
@@ -235,25 +248,32 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
             data = line.strip().split('\t')
             chrom_a = data[0]
             start_a = data[1]
-            end_a = data[2]
+            end_a = int(data[1]) + 1 
+            tool = data[4]
             igv_coord_a = chrom_a + ':' + str(start_a)
+            chrom_b = 'NA'
+            start_b = 'NA'
+            end_b = 'NA'
+
             igv_coord_b = ''
             svtype = data[3]
-            tool = data[4]
+            
             sdid = data[5].split('_')[0]
             sample = data[6]
             sup_reads = data[8] if len(data) == 9 else '.'
+
+            if tool == 'svcaller' or tool == 'lumpy':
+                chrom_b = data[0]
+                start_b = data[2]
+                end_b = int(data[2]) + 1
+                igv_coord_b = chrom_b + ':' + str(start_b)
 
             if ':' in data[7]:
                 chrom_b = filter(str.isdigit, data[7].split(':')[0])
                 start_b = int(filter(str.isdigit, data[7].split(':')[1]))
                 end_b = start_b + 1
                 igv_coord_b = chrom_b + ':' + str(start_b)
-            else:
-                chrom_b = 'NA'
-                start_b = 'NA'
-                end_b = 'NA'
-
+            
             igv_coord = ' '.join([igv_coord_a, igv_coord_b])
             gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
 
@@ -302,9 +322,7 @@ if __name__ == "__main__":
     output = args.output
     target_bed = args.targetBed
 
-
     output_dir = os.path.dirname(output)
-
 
     if sv_caller == 'svict':
         parse_svict(input_file, sdid, output, vcftype)
@@ -314,6 +332,8 @@ if __name__ == "__main__":
         parse_svaba(input_file, sdid, output, vcftype)
     elif sv_caller == 'svcaller':
         parse_svcaller(input_file, sdid, output, vcftype)
+    elif sv_caller == 'gridss':
+        parse_gridss(input_file, sdid, output, vcftype)
 
     if annotBed:
         combined_input = combine_mut(input_file, output_dir)
