@@ -657,11 +657,11 @@ write(exportJson, opts$cna_json)
     axis(1,c(1,10,100,1000),lwd=lwd,lend=1,cex.axis=cex.axis,padj=axis1padj,tck=-0.03)
     axis(2,seq(0,1,.25),lwd=lwd,lend=1,cex.axis=cex.axis,hadj=axis2hadj,tck=-0.03)
     mtext('Coverage',1,cex=cex.text,padj=text1padj)
-    mtext('Alt allele ratio',2,cex=cex.text,las=0,padj=text2padj)
+    mtext('Alt allele fraction',2,cex=cex.text,las=0,padj=text2padj)
     points(alf$td,alf$t,cex=0.3,col='#00000080',xlim=xlim,ylim=ylim,pch=16,lwd=lwd)
     points(alf$nd,alf$n,cex=0.1,col='#60606080',xlim=xlim,ylim=ylim,pch=3,lwd=lwd)
     scol=rep('#C00000CC',nrow(salf))
-    scol[salf$FILTER!=PASS]='#500000CC'
+    scol[salf$FILTER!='PASS']='#500000CC'
     points(salf$DP.T,salf$AF.T,cex=0.4,col=scol,xlim=xlim,ylim=ylim,pch=salf$pch,lwd=lwd)
     segments(x0=median(alf$td,na.rm = T),y0=0,x1=median(alf$td,na.rm = T),y1=1,col='#00000080',lwd=lwd,lty=3)
     segments(x0=median(alf$nd,na.rm = T),y0=0,x1=median(alf$nd,na.rm = T),y1=1,col='#7070FF80',lwd=lwd,lty=3)
@@ -700,7 +700,7 @@ write(exportJson, opts$cna_json)
     par(mar=c(0,0,0,0))
     plot(1,type='n',axes=F,xlab='',ylab='')
     mtext('DNA ratio',1,padj=text1padj,cex=cex.text)
-    mtext('Allelic imablance',2,padj=-3,cex=cex.text)
+    mtext('Allelic imbalance',2,padj=-3,cex=cex.text)
     
     for (c in 1:24)
     {
@@ -854,7 +854,8 @@ write(exportJson, opts$cna_json)
                col=col,
                lwd=3)
       ix=purecn_loh$C==0
-      if (sum(ix, na.rm=TRUE)>0) points(x = (purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2,y = -1.8,pch=24,bg='lightblue')
+      ixSum=sum(ix, na.rm=TRUE)
+      if (ixSum>0) points(x = (purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2,y = rep(-1.8, ixSum),pch=24,bg='lightblue')
     }
     
     #Add a bar between chromosomes to distinguish them
