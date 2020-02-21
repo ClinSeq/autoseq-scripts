@@ -39,9 +39,9 @@ opts <- getopt(args)
 
 
 chrsizes=structure(list(
-  chr = c("1", "2", "3", "4", "5", "6", "7", "8", 
-          "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", 
-          "20", "21", "22", "X", "Y", "MT"), 
+  chr = c("1", "2", "3", "4", "5", "6", "7", "8",
+          "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+          "20", "21", "22", "X", "Y", "MT"),
   size = c(249250621L, 243199373L, 
            198022430L, 191154276L, 180915260L, 171115067L, 159138663L, 146364022L, 
            141213431L, 135534747L, 135006516L, 133851895L, 115169878L, 107349540L, 
@@ -402,9 +402,9 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
     t_strvs=rbind(t_strvs,sv)
   }, silent=T)
   try( { 
-    sv <- read.delim(opts$svcaller_T_INS,header=F,stringsAsFactors = F)
+    sv <- read.delim(opts$svcaller_T_INV,header=F,stringsAsFactors = F)
     colnames(sv)[c(1,4,5)]=c('chr','start','end')
-    sv$type='INS'
+    sv$type='INV'
     t_strvs=rbind(t_strvs,sv)
   }, silent=T)
   try( { 
@@ -436,9 +436,9 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
     n_strvs=rbind(n_strvs,sv)
   }, silent=T)
   try( { 
-    sv <- read.delim(opts$svcaller_N_INS,header=F,stringsAsFactors = F)
+    sv <- read.delim(opts$svcaller_N_INV,header=F,stringsAsFactors = F)
     colnames(sv)[c(1,4,5)]=c('chr','start','end')
-    sv$type='INS'
+    sv$type='INV'
     n_strvs=rbind(n_strvs,sv)
   }, silent=T)
   try( { 

@@ -401,9 +401,9 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
     t_strvs=rbind(t_strvs,sv)
   }, silent=T)
   try( { 
-    sv <- read.delim(opts$svcaller_T_INS,header=F,stringsAsFactors = F)
+    sv <- read.delim(opts$svcaller_T_INV,header=F,stringsAsFactors = F)
     colnames(sv)[c(1,4,5)]=c('chr','start','end')
-    sv$type='INS'
+    sv$type='INV'
     t_strvs=rbind(t_strvs,sv)
   }, silent=T)
   try( { 
@@ -435,9 +435,9 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
     n_strvs=rbind(n_strvs,sv)
   }, silent=T)
   try( { 
-    sv <- read.delim(opts$svcaller_N_INS,header=F,stringsAsFactors = F)
+    sv <- read.delim(opts$svcaller_N_INV,header=F,stringsAsFactors = F)
     colnames(sv)[c(1,4,5)]=c('chr','start','end')
-    sv$type='INS'
+    sv$type='INV'
     n_strvs=rbind(n_strvs,sv)
   }, silent=T)
   try( { 
