@@ -5,6 +5,7 @@ import argparse
 import os
 import glob
 import re
+import pandas as pd
 
 
 def parse_svaba(input_vcf, SDID, output, vcftype):
@@ -91,9 +92,9 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
 
 def parse_gridss(input_vcf, SDID, output, vcftype):
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_pass_gridss.mut" 
+                      " > " + output + "_pass_gridss.mut"
 
-    gridss_cmd = "vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " + input_vcf + \
+    gridss_cmd = "zless " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " \
                  " >> " + output + "_pass_gridss.mut"
     
     subprocess.call(" && ".join([header, gridss_cmd]), shell=True)    
@@ -238,57 +239,53 @@ def gene_annotation(chrom, start, end, genes, design):
 
 
 def annotate_combined_sv(combined_file, genes, pancancer, output):
-    output_file = open(output, 'w')
-    with open(combined_file, 'r') as file:
-        header = file.readline()
-        output_file.write("\t".join(['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
-            'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-            'GENE_A', 'IN_DESIGN_A', 'GENE_B', 'IN_DESIGN_B', "GENE_A-GENE_B-sorted"]) + '\n')
-        for line in file.readlines():
-            data = line.strip().split('\t')
-            chrom_a = data[0]
-            start_a = data[1]
-            end_a = int(data[1]) + 1 
-            tool = data[4]
-            igv_coord_a = chrom_a + ':' + str(start_a)
-            chrom_b = 'NA'
-            start_b = 'NA'
-            end_b = 'NA'
+    # output_file = open(output, 'w')
+	summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
+		               'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
+					   'GENE_A', 'IN_DESIGN_A', 'GENE_B', 'IN_DESIGN_B', "GENE_A-GENE_B-sorted"]
+	summary_sv = list()
+	with open(combined_file, 'r') as fh:
+		header = fh.readline()
+	        for line in fh.readlines():
+        	    data = line.strip().split('\t')
+	            chrom_a = data[0]
+        	    start_a = data[1]
+	            end_a = data[2]
+        	    igv_coord_a = chrom_a + ':' + str(start_a)
+	            igv_coord_b = ''
+        	    svtype = data[3]
+	            tool = data[4]
+        	    sdid = data[5].split('_')[0]
+	            sample = data[6]
+        	    sup_reads = data[8] if len(data) == 9 else '.'
 
-            igv_coord_b = ''
-            svtype = data[3]
-            
-            sdid = data[5].split('_')[0]
-            sample = data[6]
-            sup_reads = data[8] if len(data) == 9 else '.'
+	            if ':' in data[7]:
+        	        chrom_b = filter(str.isdigit, data[7].split(':')[0])
+                	start_b = int(filter(str.isdigit, data[7].split(':')[1]))
+	                end_b = start_b + 1
+        	        igv_coord_b = chrom_b + ':' + str(start_b)
+	            else:
+        	        chrom_b = 'NA'
+                	start_b = 'NA'
+	                end_b = 'NA'
 
-            if tool == 'svcaller' or tool == 'lumpy':
-                chrom_b = data[0]
-                start_b = data[2]
-                end_b = int(data[2]) + 1
-                igv_coord_b = chrom_b + ':' + str(start_b)
+        	    igv_coord = ' '.join([igv_coord_a, igv_coord_b])
+	            gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
 
-            if ':' in data[7]:
-                chrom_b = filter(str.isdigit, data[7].split(':')[0])
-                start_b = int(filter(str.isdigit, data[7].split(':')[1]))
-                end_b = start_b + 1
-                igv_coord_b = chrom_b + ':' + str(start_b)
-            
-            igv_coord = ' '.join([igv_coord_a, igv_coord_b])
-            gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
+        	    if chrom_b != 'NA':
+                	gene_b, in_gene_b = gene_annotation(chrom_b, start_b, end_b, genes, pancancer)
+	            else:
+        	        gene_b, in_gene_b = 'NA', 'NA'
 
-            if chrom_b != 'NA':
-                gene_b, in_gene_b = gene_annotation(chrom_b, start_b, end_b, genes, pancancer)
-            else:
-                gene_b, in_gene_b = 'NA', 'NA'
-
-            gene_a_b = [gene_a, gene_b]
-            gene_a_b.sort()
-            gene_a_b_sorted = ",".join(gene_a_b)
-
-	    output_file.write("\t".join(map(str, [chrom_a, start_a, end_a, chrom_b, start_b,
-                             end_b, igv_coord, svtype, int(end_a)-int(start_a), sup_reads, tool, 
-                             sdid, sample, gene_a, in_gene_a, gene_b, in_gene_b, gene_a_b_sorted])) + '\n')
+	            gene_a_b = [gene_a, gene_b]
+        	    gene_a_b.sort()
+	            gene_a_b_sorted = ",".join(gene_a_b)
+        	    summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype, int(end_a)-int(start_a), sup_reads, tool, sdid, sample, gene_a, in_gene_a, gene_b, in_gene_b, gene_a_b_sorted])
+	        summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
+        	summary_sv_df_sorted = summary_sv_df.sort_values(["IN_DESIGN_A", "IN_DESIGN_B", "GENE_A-GENE_B-sorted",
+														  "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
+														  ascending=[False, False, True, True, True, True, True, True])
+	        summary_sv_df_sorted.to_csv(output, sep = "\t", encoding = 'utf-8', index = False)
 
 
 if __name__ == "__main__":
