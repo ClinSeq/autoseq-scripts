@@ -202,7 +202,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
   salf=(salf[,-1])
   
   # mark the type
-  salf$pch=rep(0,nrow(salf))
+  salf$pch=rep(22,nrow(salf))
   salf$pch[salf$type=='snv']=21
   salf$pch[salf$type=='del']=24
   salf$pch[salf$type=='ins']=25
@@ -297,7 +297,7 @@ genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$ch
   galf$gnomAD_AF=as.numeric(levels(galf$gnomAD_AF)[galf$gnomAD_AF])  # Make gnom_AD numerical so it can be used
   galf=(galf[which(galf$AO>=12 & galf$AF>=0.2 & (galf$gnomAD_AF < 0.05 | is.na(galf$gnomAD_AF))),-1])
   # mark the type
-  galf$pch=rep(0,nrow(galf))
+  galf$pch=rep(22,nrow(galf))
   galf$pch[galf$type=='snv']=21
   galf$pch[galf$type=='del']=24
   galf$pch[galf$type=='ins']=25
