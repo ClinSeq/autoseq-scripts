@@ -142,7 +142,7 @@ InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
 # create an ouput table for the samples of interest
 soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, 
+                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
 table_outfile = sub("pdf$", "txt", outfile)
 write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
@@ -209,6 +209,10 @@ my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 50
 # on-bait rate vs duplication scatter plot
 my_scatter(x = "PERCENT_DUPLICATION", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = waiver(), ybreaks = waiver(),
            x_string = "duplication rate", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Duplication rate")
+
+# fold80 base penalty vs coverage scatter plot
+my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
+           x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
 
 # insert size histogram
 ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
