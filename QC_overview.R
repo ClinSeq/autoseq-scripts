@@ -27,14 +27,6 @@ analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
 
-# for testing:
-# system("umount ~/anchorageMountpointR2")
-# system("sshfs rebber@anchorage:/nfs/CLINSEQ/PSFF/autoseq-output/ ~/anchorageMountpointR2")
-# sample_string = "PSFF-P-00368719-N-03627591-KH-PN:PSFF-P-00368719-CFDNA-03627592-KH-PN"
-# analysis_dir = "~/anchorageMountPointR2/P-00368719/PSFF-P-00368719-CFDNA-03627592-KH20191120-PN20191121_PSFF-P-00368719-N-03627591-KH20191120-PN20191121"
-# outfile = "~/scratch/QC_overview.pdf"
-# main_path = "~/anchorageMountPointR2"
-
 
 # find the qc files for all samples
 cat("Find all available qc files...\n")
@@ -162,17 +154,16 @@ theme_update(plot.title = element_text(hjust = 0.5))
 theme_update(plot.subtitle = element_text(hjust = 0.5))
 
 # plotting function to create desired histograms 
-my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_minor, x_string, title_string) {
+my_barplot = function(x, ybreaks, x_string, title_string) {
   p = ggplot(qc_merge, aes_string(x = x)) +
-    geom_histogram(aes(group = capture, fill = capture), binwidth = binwidth, alpha = 0.7, color = "black") +
-    geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue", show.legend = FALSE) + # the sample of interest
-    geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red", show.legend = FALSE) + # the sample of interest
+    geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
+    geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
+    geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
     scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
     scale_y_continuous(breaks = ybreaks) +
-    scale_x_continuous(name = x_string, breaks = xbreaks, minor_breaks = xbreaks_minor) +
+    scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
-    ggtitle(paste0(title_string, " (binwidth ", binwidth, ")"), 
-            subtitle = paste0("Red piles show present samples, blue piles show these samples if run earlier (binwidth ", sample_binwidth, ")"))
+    ggtitle(title_string, subtitle = "Red piles show present samples, blue piles show these samples if run earlier")
   print(p)
 }
 
@@ -225,17 +216,9 @@ ggplot(InsertSize_histogram, aes(x = insert_size, y = All_Reads.fr_count, group 
   facet_wrap(~sample_type, ncol = 1) +
   ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
 
-# contamination histogram
-if (max(qc_merge$contamination) < 5) {
-  xbreaks = seq(0.1, 6, 0.2)
-  xbreaks_minor = seq(0, 6, 0.1)
-} else {
-  xbreaks = waiver()
-  xbreaks_minor = waiver()
-}
-my_histogram(x = "contamination", binwidth = 0.1, sample_binwidth = 0.1, ybreaks = seq(0,nrow(qc_merge), 2),
-             xbreaks = xbreaks, xbreaks_minor = xbreaks_minor, x_string = "contamination, %", 
-             title_string = "Contamination")
+# contamination bar plot
+my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", ybreaks = waiver(),
+             x_string = "contamination, %", title_string = "Contamination")
 
 # msings score vs read count scatter plot
 my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
