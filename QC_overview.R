@@ -111,6 +111,15 @@ for (d in unique(InsertSize_histogram$DIR)) {
   }
 }
 
+# add normalized counts for insert size histogram
+InsertSize_histogram$count_norm = NA
+for (d in unique(InsertSize_histogram$DIR)) {
+  for (s in unique(subset(InsertSize_histogram, DIR == d)$SAMP)) {
+    tot_reads = MarkDuplicates$READ_PAIRS_EXAMINED[which(MarkDuplicates$DIR == d & MarkDuplicates$SAMP == s)]
+    idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
+    InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+  }
+}
 
 
 # merge the QC tables 
@@ -202,7 +211,7 @@ my_scatter(x = "PERCENT_DUPLICATION", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbre
            x_string = "duplication rate", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Duplication rate")
 
 # insert size histogram
-ggplot(InsertSize_histogram, aes(x = insert_size, y = All_Reads.fr_count, group = interaction (SAMP, DIR),
+ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
                                  linetype = capture)) +
   geom_line(color = "black", alpha = 0.5) +
   geom_line(data = subset(InsertSize_histogram, soi&!doi), color = "blue", show.legend = FALSE) +
@@ -212,8 +221,8 @@ ggplot(InsertSize_histogram, aes(x = insert_size, y = All_Reads.fr_count, group 
              inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2) +
   # scale_linetype(guide = guide_legend(override.aes = list(color = "black"))) +
   scale_x_continuous(name = "insert size", breaks = seq(0,2000,100)) +
-  scale_y_continuous(name = "count") +
-  facet_wrap(~sample_type, ncol = 1) +
+  scale_y_continuous(name = "count per million reads in total for each sample") +
+  facet_wrap(~sample_type, ncol = 1, scales = "free_y") +
   ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
 
 # contamination bar plot
