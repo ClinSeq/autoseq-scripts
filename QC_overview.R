@@ -215,19 +215,23 @@ my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq
            x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
 
 # insert size histogram
-ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
+p = ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
                                  linetype = capture)) +
   geom_line(color = "black", alpha = 0.5) +
   geom_line(data = subset(InsertSize_histogram, soi&!doi), color = "blue", show.legend = FALSE) +
   geom_line(data = subset(InsertSize_histogram, soi&doi), color = "red", show.legend = FALSE) +
-  geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
-  geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
-             inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2) +
   # scale_linetype(guide = guide_legend(override.aes = list(color = "black"))) +
   scale_x_continuous(name = "insert size", breaks = seq(0,2000,100)) +
   scale_y_continuous(name = "count per million reads in total for each sample") +
   facet_wrap(~sample_type, ncol = 1, scales = "free_y") +
   ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
+# add a line marking the length of one chromatosome if any cfDNA sample is present, since this is the typical insert size for cfDNA
+if (any(grepl("CFDNA", InsertSize_histogram$SAMP))) {
+  p = p + geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
+    geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
+               inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2)
+}
+print(p)
 
 # contamination bar plot
 my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", ybreaks = waiver(),
