@@ -27,14 +27,6 @@ analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
 
-# for testing:
-# system("umount ~/anchorageMountpointR2")
-# system("sshfs rebber@anchorage:/nfs/CLINSEQ/PSFF/autoseq-output/ ~/anchorageMountpointR2")
-# sample_string = "PSFF-P-00368719-N-03627591-KH-PN:PSFF-P-00368719-CFDNA-03627592-KH-PN"
-# analysis_dir = "~/anchorageMountPointR2/P-00368719/PSFF-P-00368719-CFDNA-03627592-KH20191120-PN20191121_PSFF-P-00368719-N-03627591-KH20191120-PN20191121"
-# outfile = "~/scratch/QC_overview.pdf"
-# main_path = "~/anchorageMountPointR2"
-
 
 # find the qc files for all samples
 cat("Find all available qc files...\n")
@@ -119,6 +111,15 @@ for (d in unique(InsertSize_histogram$DIR)) {
   }
 }
 
+# add normalized counts for insert size histogram
+InsertSize_histogram$count_norm = NA
+for (d in unique(InsertSize_histogram$DIR)) {
+  for (s in unique(subset(InsertSize_histogram, DIR == d)$SAMP)) {
+    tot_reads = MarkDuplicates$READ_PAIRS_EXAMINED[which(MarkDuplicates$DIR == d & MarkDuplicates$SAMP == s)]
+    idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
+    InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+  }
+}
 
 
 # merge the QC tables 
@@ -141,7 +142,7 @@ InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
 # create an ouput table for the samples of interest
 soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, 
+                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
 table_outfile = sub("pdf$", "txt", outfile)
 write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
@@ -162,17 +163,16 @@ theme_update(plot.title = element_text(hjust = 0.5))
 theme_update(plot.subtitle = element_text(hjust = 0.5))
 
 # plotting function to create desired histograms 
-my_histogram = function(x, binwidth, sample_binwidth, ybreaks, xbreaks, xbreaks_minor, x_string, title_string) {
+my_barplot = function(x, ybreaks, x_string, title_string) {
   p = ggplot(qc_merge, aes_string(x = x)) +
-    geom_histogram(aes(group = capture, fill = capture), binwidth = binwidth, alpha = 0.7, color = "black") +
-    geom_histogram(data = subset(qc_merge, soi), binwidth = sample_binwidth, fill = "blue", show.legend = FALSE) + # the sample of interest
-    geom_histogram(data = subset(qc_merge, soi&doi), binwidth = sample_binwidth, fill = "red", show.legend = FALSE) + # the sample of interest
+    geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
+    geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
+    geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
     scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
     scale_y_continuous(breaks = ybreaks) +
-    scale_x_continuous(name = x_string, breaks = xbreaks, minor_breaks = xbreaks_minor) +
+    scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
-    ggtitle(paste0(title_string, " (binwidth ", binwidth, ")"), 
-            subtitle = paste0("Red piles show present samples, blue piles show these samples if run earlier (binwidth ", sample_binwidth, ")"))
+    ggtitle(title_string, subtitle = "Red piles show present samples, blue piles show these samples if run earlier")
   print(p)
 }
 
@@ -206,36 +206,36 @@ my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(
 my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
            x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
 
-# on-bait rate vs duplication scatter plot
-my_scatter(x = "PERCENT_DUPLICATION", y = "ON_BAIT_BASES/PF_BASES_ALIGNED", xbreaks = waiver(), ybreaks = waiver(),
-           x_string = "duplication rate", y_string = "dedupped on-bait rate", title_string = "Dedupped on-bait rate rate vs Duplication rate")
+# duplication vs on-bait rate scatter plot
+my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+           x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
+
+# fold80 base penalty vs coverage scatter plot
+my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
+           x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
 
 # insert size histogram
-ggplot(InsertSize_histogram, aes(x = insert_size, y = All_Reads.fr_count, group = interaction (SAMP, DIR),
+p = ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
                                  linetype = capture)) +
   geom_line(color = "black", alpha = 0.5) +
   geom_line(data = subset(InsertSize_histogram, soi&!doi), color = "blue", show.legend = FALSE) +
   geom_line(data = subset(InsertSize_histogram, soi&doi), color = "red", show.legend = FALSE) +
-  geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
-  geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
-             inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2) +
   # scale_linetype(guide = guide_legend(override.aes = list(color = "black"))) +
   scale_x_continuous(name = "insert size", breaks = seq(0,2000,100)) +
-  scale_y_continuous(name = "count") +
-  facet_wrap(~sample_type, ncol = 1) +
+  scale_y_continuous(name = "count per million reads in total for each sample") +
+  facet_wrap(~sample_type, ncol = 1, scales = "free_y") +
   ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
-
-# contamination histogram
-if (max(qc_merge$contamination) < 5) {
-  xbreaks = seq(0.1, 6, 0.2)
-  xbreaks_minor = seq(0, 6, 0.1)
-} else {
-  xbreaks = waiver()
-  xbreaks_minor = waiver()
+# add a line marking the length of one chromatosome if any cfDNA sample is present, since this is the typical insert size for cfDNA
+if (any(grepl("CFDNA", InsertSize_histogram$SAMP))) {
+  p = p + geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
+    geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
+               inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2)
 }
-my_histogram(x = "contamination", binwidth = 0.1, sample_binwidth = 0.1, ybreaks = seq(0,nrow(qc_merge), 2),
-             xbreaks = xbreaks, xbreaks_minor = xbreaks_minor, x_string = "contamination, %", 
-             title_string = "Contamination")
+print(p)
+
+# contamination bar plot
+my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", ybreaks = waiver(),
+             x_string = "contamination, %", title_string = "Contamination")
 
 # msings score vs read count scatter plot
 my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),

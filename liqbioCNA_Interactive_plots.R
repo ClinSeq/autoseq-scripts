@@ -103,6 +103,22 @@ genes=data.frame(label = c("AKT1", "APC", "AR", "ARID1A", "ARID2", "ATM", "ATR",
 genes$cumstart <- genes$start + chrsizes$cumstart[match(genes$chromosome,chrsizes$chr)]
 genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$chr)]
 
+##############Read Gene Track######################
+data2 <- read.table("/nfs/PROBIO/autoseq-genome/gene_track_output.csv", sep=",", na.strings=".", stringsAsFactors=FALSE, quote="", fill=FALSE , comment.char="#", header=TRUE)
+data2$cumstart <- data2$Start + chrsizes$cumstart[match(data2$Chromosome,chrsizes$chr)]
+data2$cumend <- data2$End + chrsizes$cumstart[match(data2$Chromosome,chrsizes$chr)]
+
+
+
+data2_mRNA <- data2[data2$Feature == 'transcript',]
+data2_3p <- data2[data2$Feature == 'three_prime_utr',]
+data2_5p <- data2[data2$Feature == 'five_prime_utr',]
+data2_exon <- data2[data2$Feature == 'exon',]
+
+
+
+
+
 
 ### Read SNP allele ratio
 {
@@ -1304,9 +1320,15 @@ if (!is.null(bins)) {
     geom_line(aes((bins$cumstart[!ix]+bins$cumend[!ix])/2,bins$log2[!ix]),  col = '#00000020')+
     geom_point(aes((bins$cumstart[!ix]+bins$cumend[!ix])/2,bins$log2[!ix]), cex=0.5) +
     geom_segment(
-      aes(x = segments$cumstart, y = segments$log2, xend = segments$cumend, yend = segments$log2, 
-          text=sprintf("CNVs:<br>: start: %f <br> end: %f <br> length: %f", segments$cumstart, segments$cumend, segments$cumend-segments$cumstart + 1 )
-      ),
+      aes(x = segments$cumstart, y = segments$log2, xend = segments$cumend, yend = segments$log2,
+          text=sprintf("CNVs:<br>chr: %s <br> log2: %f <br> start: %f <br> end: %f <br> depth: %f <br> probes: %f <br>",
+                       segments$chromosome,
+                       segments$log2,
+                       segments$start,
+                       segments$end,
+                       segments$depth,
+                       segments$probes)
+      ),  
       size=0.80, 
       show.legend=F,
       col='#00C000CC'
@@ -1375,32 +1397,73 @@ if (!is.null(bins)) {
   
   ix=purecn_loh$C==0
   if (sum(ix, na.rm=TRUE)>0){
-    p <- p + geom_point(aes(x=(purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2, y=-1.8,
-                            text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ", 
-                                         purecn_loh$chr, 
-                                         purecn_loh$cumstart, 
-                                         purecn_loh$cumend, 
-                                         purecn_loh$type, 
-                                         purecn_loh$arm )
-                            
-                            ), shape =24, size =2, colour="blue", fill = "blue")
+    #p <- p + geom_point(aes(x=(purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2, y=-1.8,
+    #                        text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ", 
+    #                                     purecn_loh$chr, 
+    #                                     purecn_loh$cumstart, 
+    #                                     purecn_loh$cumend, 
+    #                                     purecn_loh$type, 
+    #                                     purecn_loh$arm )
+    #                        
+    #                        ), shape =24, size =2, colour="blue", fill = "blue")
+    
+      xstart_n <- purecn_loh$cumstart[ix]
+      xend_n   <- purecn_loh$cumend[ix]
+      chr      <- purecn_loh$chr[ix]
+      type     <-  purecn_loh$type[ix]
+      arm      <- purecn_loh$arm[ix]
+      cumstart <- purecn_loh$cumstart[ix]
+      cumend   <- purecn_loh$cumend[ix]
+      c <-  purecn_loh$C[ix]
+      df_c_new = data.frame(xstart_n, xend_n, chr,  type, arm , cumstart, cumend, c )
+
+    p <- p + geom_point(data = df_c_new, aes(x=(df_c_new$cumstart+df_c_new$cumend)/2, y=-1.8,
+                            text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ",
+                                         df_c_new$chr,
+                                         df_c_new$cumstart,
+                                         df_c_new$cumend,
+                                         df_c_new$type,
+                                         df_c_new$arm )
+
+                           ), shape =24, size =2, colour="blue", fill = "blue")
+
   }
   
 }
 
 # chromosome lines
-p <- p + geom_vline(aes(xintercept = chrsizes$cumstart+chrsizes$size,
-                        text=sprintf("chromosome:  %s", chrsizes$chr))) +
-  geom_text(aes(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,label = n_strvs$type,
+#p <- p + geom_vline(aes(xintercept = chrsizes$cumstart+chrsizes$size,
+#                        text=sprintf("chromosome:  %s", chrsizes$chr))) +
+#  geom_text(aes(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,label = n_strvs$type,
+#                text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", n_strvs$chr, n_strvs$V3, n_strvs$V7)
+#                ),
+#            col='blue',cex=2,srt=90, size=4) +
+  # add any stuctural variants
+#   
+#  geom_text(aes(x = (t_strvs$cumstart+t_strvs$cumend)/2,y = ymax-0.2,label = t_strvs$type,
+#                text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", t_strvs$chr, t_strvs$V3, t_strvs$V7)
+#                ),
+#          col='red',cex=2,srt=90, size=4)
+
+
+try(  {
+  p <- p + geom_vline(aes(xintercept = chrsizes$cumstart+chrsizes$size,
+                        text=sprintf("chromosome:  %s", chrsizes$chr)))
+  if( dim(n_strvs) != NULL ) {
+     p <- p + geom_text(aes(x = (n_strvs$cumstart+n_strvs$cumend)/2,y = ymax-0.2,label = n_strvs$type,
                 text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", n_strvs$chr, n_strvs$V3, n_strvs$V7)
                 ),
-            col='blue',cex=2,srt=90, size=4) +
+            col='blue',cex=2,srt=90, size=4)
+  }
   # add any stuctural variants
-   
-  geom_text(aes(x = (t_strvs$cumstart+t_strvs$cumend)/2,y = ymax-0.2,label = t_strvs$type,
+   if( dim(t_strvs) != NULL ) {
+      p <- p + geom_text(aes(x = (t_strvs$cumstart+t_strvs$cumend)/2,y = ymax-0.2,label = t_strvs$type,
                 text=sprintf("chr:%s, <br> gene_feature: %s <br> strand:%s", t_strvs$chr, t_strvs$V3, t_strvs$V7)
                 ),
           col='red',cex=2,srt=90, size=4)
+ }
+}, silent=T)
+
 
 p<-ggplotly(p, tooltip = "text", height = 1024) # this p will be used in subplot
 #####################snp plot with germline and stomatic#######################################################
@@ -1519,7 +1582,93 @@ if (nrow(galf)>0) {
 }
 
 p1<-ggplotly(p1, tooltip = "text",  height = 1024)
-x <- subplot(p, p1, shareX = TRUE, nrows=2, which_layout = 1)
+
+### draw gene track with ggplot#####
+p2<-ggplot()+
+  xlim(0,3095370729) + theme_bw() +
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(colour = "black"),
+    axis.ticks = element_line(),
+    axis.title=element_text(face="bold.italic", size="12", color="blue"),
+    axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
+    axis.ticks.x=element_blank(),
+    axis.line.x = element_blank(),
+    legend.position="top",
+    axis.ticks.length = unit(0.25, "cm")
+  ) +
+  labs(y = "Log ratio", x = "", colour = "blue")+
+  scale_y_continuous(
+    breaks = seq(-2,2, by = 0.5),
+    labels = seq(-2,2, by = 0.5),
+    expand = c(0,0),
+    limits = c(-2,2),
+    sec.axis = dup_axis()
+  )
+
+p2 <- p2 + geom_rect(data= data2_mRNA,
+                   mapping=aes(xmin=data2_mRNA$cumstart,
+                               xmax=data2_mRNA$cumend,
+                               ymin=data2_mRNA$yaxis+0.05,
+                               ymax=data2_mRNA$yaxis-0.05,
+                               text=sprintf("chr: %s <br>start: %f <br>end: %f <br>gene_id:%s <br> transcript_id: %s <br> Symbol: %s  <br>strand: %s<br>type:gene",
+                                        data2_mRNA$Chromosome,
+                                        data2_mRNA$Start,
+                                        data2_mRNA$End,
+                                        data2_mRNA$gene_id,
+                                        data2_mRNA$transcript_id,
+                                        data2_mRNA$gene_name,
+                                        data2_mRNA$Strand)))
+
+
+
+
+
+p2 <- p2 + geom_segment(data=data2_3p, mapping=aes(x = data2_3p$cumstart, y = data2_3p$yaxis, xend = data2_3p$cumend, yend = data2_3p$yaxis,
+
+                                          text=sprintf("chr: %s <br>start: %f <br>end: %f <br>gene_id:%s <br> transcript_id: %s <br> Symbol: %s  <br>strand: %s",
+                                        data2_3p$Chromosome,
+                                        data2_3p$Start,
+                                        data2_3p$End,
+                                        data2_3p$gene_id,
+                                        data2_3p$transcript_id,
+                                        data2_3p$gene_name,
+                                        data2_3p$Strand)
+
+                                                 ), size = 9, color='red' )
+
+p2 <- p2 + geom_segment(data=data2_5p, mapping=aes(x = data2_5p$cumstart, y = data2_5p$yaxis, xend = data2_5p$cumend, yend = data2_5p$yaxis
+
+                                        ,text=sprintf("chr: %s <br>start: %f <br>end: %f <br>gene_id:%s <br> transcript_id: %s <br> Symbol: %s  <br>strand: %s",
+                                        data2_5p$Chromosome,
+                                        data2_5p$Start,
+                                        data2_5p$End,
+                                        data2_5p$gene_id,
+                                        data2_5p$transcript_id,
+                                        data2_5p$gene_name,
+                                        data2_5p$Strand)
+
+                                                 ), size = 9, color='blue' )
+  
+
+
+p2 <- p2 + geom_segment(data=data2_exon, mapping=aes(x = data2_exon$cumstart, y = data2_exon$yaxis, xend = data2_exon$cumend, yend = data2_exon$yaxis
+                                        ,            text=sprintf("chr: %s <br>start: %f <br>end: %f <br>gene_id:%s <br> transcript_id: %s <br> Symbol: %s  <br>strand: %s",
+                                        data2_exon$Chromosome,
+                                        data2_exon$Start,
+                                        data2_exon$End,
+                                        data2_exon$gene_id,
+                                        data2_exon$transcript_id,
+                                        data2_exon$gene_name,
+                                        data2_exon$Strand)
+
+                                                   ), size = 7, color='green' )
+
+
+x <- subplot(p, p1, p2, shareX = TRUE, nrows=3, which_layout = 1)
 x<-plotly_json(x, FALSE)
 filename<-paste(destnation_folder,'/',purity$Sampleid,"_snpratio.json", sep="")
 write(x, filename)
