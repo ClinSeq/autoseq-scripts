@@ -92,10 +92,10 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
 
 def parse_gridss(input_vcf, SDID, output, vcftype):
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_pass_gridss.mut"
+                      " > " + output + "_" + vcftype + "_pass_gridss.mut"
 
     gridss_cmd = "zless " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " \
-                 " >> " + output + "_pass_gridss.mut"
+                 " >> " + output + "_" + vcftype +"_pass_gridss.mut"
     
     subprocess.call(" && ".join([header, gridss_cmd]), shell=True)    
 
@@ -184,7 +184,7 @@ def combine_mut(input_dir, output_dir):
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'gridss.mut' in file:
-            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'            
+            vcftype = 'somatic' if 'somatic' in filebase else 'germline'            
             cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"gridss\", $4, \"" + vcftype + "\", $6, $7}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
