@@ -48,6 +48,13 @@ insertsize_files = insertsize_files[file.mtime(insertsize_files) > as.POSIXct("2
 contest_files = contest_files[file.mtime(contest_files) > as.POSIXct("2019-04-30")]
 msings_files = msings_files[file.mtime(msings_files) > as.POSIXct("2019-04-30")]
 
+# remove files from WGS samples (will otherwise break the script due to different columns etc)
+hsmetrics_files = hsmetrics_files[grep("WGS", hsmetrics_files, invert = TRUE)]
+markduplicates_files = markduplicates_files[grep("WGS", markduplicates_files, invert = TRUE)]
+insertsize_files = insertsize_files[grep("WGS", insertsize_files, invert = TRUE)]
+contest_files = contest_files[grep("WGS", contest_files, invert = TRUE)]
+msings_files = msings_files[grep("WGS", msings_files, invert = TRUE)]
+
 
 # read in the files
 cat("Read in the files...\n")
